@@ -38,3 +38,10 @@ desktop.ini
 *~
 .idea/
 .vscode/
+# Grafana runtime data
+infra/grafana/*.db
+infra/grafana/unified-search/
+infra/grafana/plugins/
+infra/grafana/csv/
+infra/grafana/pdf/
+infra/grafana/png/
