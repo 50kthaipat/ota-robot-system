@@ -12,6 +12,7 @@ This repository is organized into distinct domain areas separating Frontend, Bac
 docs/
 ├── README.md                     # 🧭 Master Documentation Index (You are here)
 ├── ARCHITECTURE.md               # 🏗️ Global System Architecture & Sequence Flows
+├── EXPERIMENTAL_PLAN.md          # 🔬 Unbiased Multi-Scenario Research Experimental Plan
 ├── KPIS_AND_EVALUATION.md        # 📊 The 12 Thesis Core KPIs & k6 Benchmark Results
 ├── SETUP_GUIDE.md                # 🚀 Full Installation, Docker, & Troubleshooting Guide
 ├── TASKS.md                      # 📋 Engineering Roadmap & Progress (Weeks 1 – 16)
@@ -32,6 +33,7 @@ docs/
 | Topic | Document | Description |
 |---|---|---|
 | **System Architecture** | [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) | High-level topology, microservices interaction, and Canary state machines. |
+| **Experimental Plan** | [`docs/EXPERIMENTAL_PLAN.md`](./EXPERIMENTAL_PLAN.md) | Unbiased 5-scenario methodology, variable matrix, and raw data collection. |
 | **Backend Control Plane** | [`docs/backend/API_SPEC.md`](./backend/API_SPEC.md) | Full HTTP REST endpoints, payloads, query parameters, and MQTT schemas. |
 | **Cryptographic Security** | [`docs/backend/CRYPTO_AND_SECURITY.md`](./backend/CRYPTO_AND_SECURITY.md) | Asymmetric code signing, SHA-256 integrity, and tamper prevention. |
 | **Database & ERD** | [`docs/backend/DATABASE_SCHEMA.md`](./backend/DATABASE_SCHEMA.md) | PostgreSQL relational schema, indexes, and entity relationships. |
