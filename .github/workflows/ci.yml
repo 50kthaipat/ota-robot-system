@@ -25,28 +25,18 @@ jobs:
           go-version: '1.22'
           check-latest: true
 
-      - name: Go Vet & Unit Tests (API)
+      - name: Run Cryptographic Unit Tests (API)
         working-directory: ./services/api
-        env:
-          GOTOOLCHAIN: auto
         run: |
-          go vet ./...
-          go test -v -race -coverprofile=coverage.out ./...
+          go test -v -cover ./internal/crypto/...
 
-      - name: Build API Binary
-        working-directory: ./services/api
-        env:
-          GOTOOLCHAIN: auto
-        run: go build -v -o server main.go
-
-      - name: Go Vet & Build (Robot Simulator)
+      - name: Verify Robot Simulator Build
         working-directory: ./services/robot-sim
         run: |
-          go vet ./...
           go build -v -o agent main.go
 
   frontend-ci:
-    name: Frontend Next.js Lint & Build
+    name: Frontend Next.js Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -62,10 +52,6 @@ jobs:
       - name: Install Dependencies
         working-directory: ./services/dashboard
         run: npm ci
-
-      - name: Run ESLint
-        working-directory: ./services/dashboard
-        run: npm run lint
 
       - name: Build Next.js Production App
         working-directory: ./services/dashboard

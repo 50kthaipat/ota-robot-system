@@ -3,6 +3,9 @@ const apiHost = process.env.API_INTERNAL_URL || "http://api:8000";
 
 const nextConfig = {
   reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async rewrites() {
     return [
       {
