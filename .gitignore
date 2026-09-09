@@ -57,3 +57,8 @@ data/experiments/
 benchmark_data/
 scripts/k6/results.json
 *.csv
+
+# ML ¡ª Generated outputs (regenerate via ml/src/*.py + scripts/statistical_analysis.py)
+*.pkl
+ml/models/
+ml/reports/

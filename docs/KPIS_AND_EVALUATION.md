@@ -36,3 +36,78 @@
 - ข้อมูล Metrics ทั้งหมดถูกบันทึกและแสดงผลแบบ Real-time บน Grafana Dashboards ทั้ง 4 หน้า
 - ผลการทดลองนี้ยืนยันว่าสถาปัตยกรรม Go Fiber + EMQX MQTT v5 + PostgreSQL Connection Pooling สามารถรองรับฝูงหุ่นยนต์ขนาดใหญ่ในระดับอุตสาหกรรมได้อย่างมีเสถียรภาพสูง ปราศจาก Data Loss หรือ Bottleneck ใดๆ
 
+---
+
+## 3. Measurement Methodology (วิธีวัดค่าแต่ละตัวชี้วัด)
+
+เอกสารนี้อธิบายอย่างละเอียดว่าค่า KPI แต่ละตัวถูกวัดด้วยวิธีใด เพื่อให้การทดลองสามารถทำซ้ำได้ (Reproducibility) และตอบคำถามของคณะกรรมการสอบ
+
+### 3.1 การวัดเวลา (Timing Measurement)
+
+| ตัวชี้วัด | วิธีวัด | ตำแหน่งในโค้ด |
+|---|---|---|
+| `download_time_ms` | `time.Now()` ก่อนและหลัง `http.Get()` + `io.ReadAll()` | `scripts/run_experiments.ps1` — PowerShell `[System.Diagnostics.Stopwatch]` |
+| `hash_verify_time_ms` | `time.Now()` ก่อนและหลัง `sha256.Sum256()` | `scripts/run_experiments.ps1` |
+| `signature_verify_time_ms` | `time.Now()` ก่อนและหลัง `verifyECDSASignature()` | `simulator/main.go` — `t0Ecdsa := time.Now()` (line ~182) |
+| `reboot_apply_time_ms` | เวลาตั้งแต่สั่ง reboot จนหุ่นยนต์ส่ง Heartbeat version ใหม่กลับมา | `simulator/main.go` — `time.Sleep()` simulation |
+| `rollback_time_ms` | เวลาตั้งแต่ตรวจพบ Error Event จนหุ่นยนต์ยืนยัน rollback สำเร็จ | `scripts/run_experiments.ps1` — เวลาจาก trigger ถึง MQTT status message |
+
+**หน่วยเวลา:** มิลลิวินาที (ms) ทุกตัว  
+**Resolution:** PowerShell `[System.Diagnostics.Stopwatch]` มี resolution ≈ 0.1ms บน Windows  
+**Warmup:** ไม่นับ Trial แรก (Trial 0) เพื่อหลีกเลี่ยง JIT/cache effect
+
+### 3.2 การจำลองสภาพเครือข่าย (Network Simulation)
+
+สภาพเครือข่ายจำลองในชุดการทดลองที่ 4 ใช้วิธี **Parameterized Delay Injection** ในสคริปต์ PowerShell:
+
+```powershell
+# scripts/run_experiments.ps1
+# ไม่ได้ใช้ tc netem เนื่องจากรันบน Windows Environment
+# ใช้ Sleep ที่คำนวณจาก Latency ที่กำหนด + Download Time จริงจาก HTTP
+$simulatedLatencyMs = 150   # หรือ 300, 500 ตาม scenario
+Start-Sleep -Milliseconds $simulatedLatencyMs
+```
+
+> **ข้อจำกัด (Limitation):** การจำลอง Packet Loss (5%, 10%) ทำโดยการสุ่มยกเว้นบาง Trial
+> ตามที่ระบุในบทที่ 5.3 (Limitations) ซึ่งเป็นความแตกต่างจากการใช้ `tc netem` บน Linux
+
+### 3.3 การวัด ECDSA Overhead (Thesis Section 4.2)
+
+```go
+// simulator/main.go — ตำแหน่งวัดจริง
+t0Ecdsa := time.Now()
+valid := verifyECDSASignature(ecdsaPubKey, hashStr, cmd.Signature)
+ecdsaMs := time.Since(t0Ecdsa).Milliseconds()
+```
+
+- วัดเฉพาะ `ecdsa.VerifyASN1()` โดยไม่รวมเวลา Network และ I/O
+- ทดสอบ N=30 รอบ (Scenario 2) และ N=150 รอบ (Scenario 1, 5 robots × 30 trials)
+- ค่า overhead อยู่ในช่วง 2–3 ms ซึ่งยืนยันสมมติฐานที่ 1 (< 10 ms)
+
+### 3.4 สถิติที่ใช้ยืนยันผลการทดลอง
+
+| สถิติ | วัตถุประสงค์ | เครื่องมือ |
+|---|---|---|
+| Mean ± Std Dev | อธิบายค่ากลางและการกระจาย | `scripts/statistical_analysis.py` |
+| 95% Confidence Interval | แสดงขอบเขตความเชื่อมั่น | `scipy.stats.t.ppf(0.975, df=n-1)` |
+| Mann-Whitney U Test | เปรียบเทียบ Canary vs Direct (non-parametric) | `scipy.stats.mannwhitneyu()` |
+| Shapiro-Wilk Test | ทดสอบ Normality ก่อนเลือก parametric/non-parametric test | `scipy.stats.shapiro()` |
+| R² Score | ประเมินความแม่นยำของ Random Forest Regression | `sklearn.metrics.r2_score()` |
+| ROC-AUC | ประเมินประสิทธิภาพการตรวจจับ Anomaly | `sklearn.metrics.roc_auc_score()` |
+
+### 3.5 Reproducibility
+
+การทดลองทั้งหมดสามารถทำซ้ำได้โดย:
+```powershell
+# รันชุดการทดลองทั้ง 5 สถานการณ์
+.\scripts\run_experiments.ps1
+
+# วิเคราะห์ผลลัพธ์
+python scripts/statistical_analysis.py
+
+# เทรน ML Models
+python ml/src/train_anomaly.py
+python ml/src/train_regression.py
+```
+
+Random seed ที่ใช้ใน ML: `random_state=42` (ทั้ง Isolation Forest และ Random Forest)
