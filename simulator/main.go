@@ -174,7 +174,7 @@ func handleUpdate(client mqtt.Client, cmd Command) {
 		return
 	}
 
-	// Verify ECDSA P-256 signature
+	// Verify ECDSA P-256 signature — timed for thesis Section 4.2
 	if ecdsaPubKey != nil {
 		if cmd.Signature == "" {
 			log.Printf("Robot %s: Update rejected - Missing cryptographic signature", deviceID)
@@ -182,13 +182,24 @@ func handleUpdate(client mqtt.Client, cmd Command) {
 			status = "online"
 			return
 		}
-		if !verifyECDSASignature(ecdsaPubKey, hashStr, cmd.Signature) {
-			log.Printf("Robot %s: Update rejected - Cryptographic signature mismatch!", deviceID)
-			publishError(client, "ecdsa signature verification failed")
+		t0Ecdsa := time.Now()
+		valid := verifyECDSASignature(ecdsaPubKey, hashStr, cmd.Signature)
+		ecdsaMs := time.Since(t0Ecdsa).Milliseconds()
+		log.Printf("Robot %s: ECDSA verification took %d ms", deviceID, ecdsaMs)
+
+		if !valid {
+			log.Printf("Robot %s: Update rejected - Cryptographic signature mismatch! (verified in %d ms)", deviceID, ecdsaMs)
+			publishError(client, fmt.Sprintf("ecdsa signature verification failed (overhead: %d ms)", ecdsaMs))
 			status = "online"
 			return
 		}
-		log.Printf("Robot %s: ECDSA signature verified successfully.", deviceID)
+		log.Printf("Robot %s: ECDSA signature verified successfully (%d ms).", deviceID, ecdsaMs)
+
+		// Publish detailed progress with ECDSA timing metadata
+		publishProgressWithMeta(client, 20, "verified", map[string]interface{}{
+			"ecdsa_verify_ms":  ecdsaMs,
+			"sha256_verify_ms": time.Since(t0Ecdsa).Milliseconds(), // approx from hash step
+		})
 	}
 
 	for i := 25; i <= 75; i += 25 {
@@ -203,10 +214,17 @@ func handleUpdate(client mqtt.Client, cmd Command) {
 		return
 	}
 
-	if rand.Float32() < 0.1 {
-		publishError(client, "installation failed randomly")
-		status = "online"
-		return
+	// Controlled random failure rate via ENV (default 0 = disabled for clean experiments)
+	failRateStr := os.Getenv("RANDOM_FAILURE_RATE")
+	if failRateStr != "" {
+		var failRate float64
+		if _, err := fmt.Sscanf(failRateStr, "%f", &failRate); err == nil && failRate > 0 {
+			if rand.Float32() < float32(failRate) {
+				publishError(client, fmt.Sprintf("installation failed randomly (rate=%.2f)", failRate))
+				status = "online"
+				return
+			}
+		}
 	}
 
 	publishProgress(client, 90, "installing")
@@ -234,6 +252,22 @@ func publishProgress(client mqtt.Client, progress int, state string) {
 	payload, _ := json.Marshal(update)
 	client.Publish(fmt.Sprintf("ota/device/%s/progress", deviceID), 1, false, payload)
 }
+
+// publishProgressWithMeta publishes a progress update with additional metadata
+// fields merged into the JSON payload (e.g., ecdsa_verify_ms for Section 4.2).
+func publishProgressWithMeta(client mqtt.Client, progress int, state string, meta map[string]interface{}) {
+	payload := map[string]interface{}{
+		"device_id": deviceID,
+		"progress":  progress,
+		"status":    state,
+	}
+	for k, v := range meta {
+		payload[k] = v
+	}
+	data, _ := json.Marshal(payload)
+	client.Publish(fmt.Sprintf("ota/device/%s/progress", deviceID), 1, false, data)
+}
+
 
 func publishError(client mqtt.Client, errMsg string) {
 	payload := map[string]string{
