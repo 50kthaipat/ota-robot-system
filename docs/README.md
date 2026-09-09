@@ -13,7 +13,7 @@ docs/
 ├── README.md                     # 🧭 Master Documentation Index (You are here)
 ├── ARCHITECTURE.md               # 🏗️ Global System Architecture & Sequence Flows
 ├── EXPERIMENTAL_PLAN.md          # 🔬 Unbiased Multi-Scenario Research Experimental Plan
-├── KPIS_AND_EVALUATION.md        # 📊 The 12 Thesis Core KPIs & k6 Benchmark Results
+├── KPIS_AND_EVALUATION.md        # 📊 System Performance Metrics & k6 Benchmark Results
 ├── SETUP_GUIDE.md                # 🚀 Full Installation, Docker, & Troubleshooting Guide
 ├── TASKS.md                      # 📋 Engineering Roadmap & Progress (Weeks 1 – 16)
 │
@@ -38,7 +38,7 @@ docs/
 | **Cryptographic Security** | [`docs/backend/CRYPTO_AND_SECURITY.md`](./backend/CRYPTO_AND_SECURITY.md) | Asymmetric code signing, SHA-256 integrity, and tamper prevention. |
 | **Database & ERD** | [`docs/backend/DATABASE_SCHEMA.md`](./backend/DATABASE_SCHEMA.md) | PostgreSQL relational schema, indexes, and entity relationships. |
 | **Frontend Web App** | [`docs/frontend/UI_UX_SPEC.md`](./frontend/UI_UX_SPEC.md) | Next.js 14 App Router, Cyber-Dark design tokens, and components. |
-| **Academic Thesis KPIs** | [`docs/KPIS_AND_EVALUATION.md`](./KPIS_AND_EVALUATION.md) | Empirical evaluation results across all 12 thesis KPIs (100% pass rate). |
+| **Performance Evaluation** | [`docs/KPIS_AND_EVALUATION.md`](./KPIS_AND_EVALUATION.md) | Quantitative benchmark evaluation and k6 stress test metrics. |
 | **Deployment & Setup** | [`docs/SETUP_GUIDE.md`](./SETUP_GUIDE.md) | Step-by-step local environment setup, Grafana credentials, and clock sync. |
 | **Roadmap & Progress** | [`docs/TASKS.md`](./TASKS.md) | Phase 1 implementation checklist and Phase 2 Thesis chapter milestones. |
 

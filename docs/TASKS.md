@@ -96,21 +96,18 @@
 
 ---
 
-### 🔹 Week 6: Load Testing, KPI Measurement & Final Polish
+### 🔹 Week 6: Load Testing, Multi-Scenario Experiments & Final Polish
 - [x] **k6 Performance & Load Test:**
   - [x] เขียน Script จำลอง Robot 50-100 ตัว ส่ง Status และดาวน์โหลด Firmware พร้อมกัน (`scripts/k6/load_test_fleet.js`)
   - [x] เก็บผลทดสอบ Latency (p95: 2.4ms), Error Rate (0.00%), Throughput (1,304 req/s, 91,480 requests handled)
-- [x] **รวบรวมตัวชี้วัด (KPIs Checklist 12 ตัว - 100% Pass):**
-  - [x] OTA Success Rate (เป้าหมาย ≥ 99% ➡️ ผลจริง: **100%**)
-  - [x] Average Download Time (< 30 วินาที / 10MB ➡️ ผลจริง: **0.85 วินาที**)
-  - [x] Auto-Rollback Time (< 60 วินาที ➡️ ผลจริง: **1.2 วินาที**)
-  - [x] API Latency p95 (< 300ms ➡️ ผลจริง: **2.4 ms**)
-  - [x] Unsigned Firmware Installs (= 0 ➡️ ผลจริง: **0 ครั้ง - ECDSA P-256 Blocked**)
-  - [x] ครบทั้ง 12 ตัวชี้วัด พร้อมสคริปต์ตรวจสอบอัตโนมัติ `scripts/evaluate_kpis.ps1`
-- [x] บันทึกผลการทดลองและตาราง KPI ลงใน `docs/KPIS_AND_EVALUATION.md` เรียบร้อย เพื่อใช้ในเล่มรายงานวิทยานิพนธ์
-- [x] **จัดระเบียบโครงสร้าง Monorepo & เอกสาร:**
-  - [x] แยกส่วน Frontend (`frontend/`), Backend (`backend/`), และ Edge Simulator (`simulator/`) ชัดเจนพร้อมคู่มือ README ประจำแต่ละ Service
-  - [x] จัดหมวดหมู่เอกสาร `docs/backend/` (API Spec, Crypto Security, Database Schema) และ `docs/frontend/` (UI/UX Spec, Design System)
+- [x] **การทดสอบประสิทธิภาพเชิงเปรียบเทียบ 5 สถานการณ์ (Empirical Multi-Scenario Testing):**
+  - [x] ออกแบบระเบียบวิธีวิจัยและกรอบการทดลอง 5 สถานการณ์เพื่อตัดอคติข้อมูล (`docs/EXPERIMENTAL_PLAN.md`)
+  - [x] พัฒนาสคริปต์รันการทดลองอัตโนมัติ (`scripts/run_experiments.ps1`) ทำการทดสอบซ้ำ (Repeated Trials)
+  - [x] รันและบันทึกข้อมูลดิบรายเรคคอร์ดระดับมิลลิวินาทีลงไฟล์ CSV ในเครื่อง (`data/experiments/*.csv`) รวม 290 แถว
+  - [x] วัดผลครบทั้ง 5 มิติ: สภาวะปกติ (100% Pass), สกัดกั้นภัยไซเบอร์ (100% Rejection), กู้คืนระบบ (Rollback 1.2s), สภาวะเครือข่ายหน่วง, และป้องกันการส่งข้ามรุ่นฮาร์ดแวร์
+- [x] **จัดระเบียบโครงสร้าง Monorepo & ความปลอดภัย Git:**
+  - [x] แยกส่วน Frontend (`frontend/`), Backend (`backend/`), และ Edge Simulator (`simulator/`) ชัดเจนที่ Root
+  - [x] ปลดกุญแจส่วนตัว (Private Key) และ Vendor Plugins ออกจาก Git tracking เพื่อความปลอดภัยตามมาตรฐานสากล
   - [x] สร้าง Master Documentation Hub (`docs/README.md`) และยกเครื่อง `README.md` ระดับโปรเจกต์
 - [ ] อัดวิดีโอ Demo แสดงการใช้งานระบบทุกฟีเจอร์ (พร้อมสำหรับการนำเสนอ)
 
@@ -122,6 +119,6 @@
 - [ ] **สัปดาห์ที่ 8:** บทที่ 2 — ทฤษฎีและงานวิจัยที่เกี่ยวข้อง (OTA, MQTT 5.0, IoT Security, Code Signing)
 - [ ] **สัปดาห์ที่ 9:** บทที่ 3 — การออกแบบระบบ (System Architecture, Sequence Flow, Database ER-Diagram)
 - [ ] **สัปดาห์ที่ 10–11:** บทที่ 4 — การพัฒนาระบบ (Implementation Details, Code Explanations)
-- [ ] **สัปดาห์ที่ 12–13:** บทที่ 5 — ผลการทดสอบและวิเคราะห์ข้อมูล (KPI Results, Grafana Graphs, k6 Benchmark)
+- [ ] **สัปดาห์ที่ 12–13:** บทที่ 5 — ผลการทดสอบและวิเคราะห์ข้อมูล (ผลการทดสอบ 5 สถานการณ์, กราฟ Box Plot, CDF, k6 Benchmark)
 - [ ] **สัปดาห์ที่ 14:** บทที่ 6 — สรุปผลการทดลอง อภิปรายผล และข้อเสนอแนะ (Future Work)
 - [ ] **สัปดาห์ที่ 15–16:** ตรวจทานความถูกต้อง จัด Format เล่มวิทยานิพนธ์ และจัดเตรียม Presentation สไลด์
