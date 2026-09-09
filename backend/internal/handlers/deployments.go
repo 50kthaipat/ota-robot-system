@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"context"
-	"log"
-	"math"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -13,23 +11,27 @@ import (
 	"github.com/minio/minio-go/v7"
 	db "github.com/ota-robot/api/internal/db/generated"
 	mymqtt "github.com/ota-robot/api/internal/mqtt"
+	"github.com/ota-robot/api/internal/orchestrator"
 )
 
 type DeploymentHandler struct {
-	db         *pgxpool.Pool
-	queries    *db.Queries
-	minio      *minio.Client
-	bucket     string
-	mqttClient *mymqtt.Client
+	db                 *pgxpool.Pool
+	queries            *db.Queries
+	minio              *minio.Client
+	bucket             string
+	mqttClient         *mymqtt.Client
+	canaryOrchestrator *orchestrator.CanaryOrchestrator
 }
 
 func NewDeploymentHandler(pool *pgxpool.Pool, mc *minio.Client, bucket string, mqttClient *mymqtt.Client) *DeploymentHandler {
+	queries := db.New(pool)
 	return &DeploymentHandler{
-		db:         pool,
-		queries:    db.New(pool),
-		minio:      mc,
-		bucket:     bucket,
-		mqttClient: mqttClient,
+		db:                 pool,
+		queries:            queries,
+		minio:              mc,
+		bucket:             bucket,
+		mqttClient:         mqttClient,
+		canaryOrchestrator: orchestrator.NewCanaryOrchestrator(queries, mqttClient),
 	}
 }
 
@@ -135,7 +137,7 @@ func (h *DeploymentHandler) CreateDeployment(c fiber.Ctx) error {
 	}
 
 	if strategy == "canary" {
-		go h.runCanaryRollout(dep.ID, targetDevices, cmd)
+		go h.canaryOrchestrator.Run(dep.ID, targetDevices, cmd)
 	} else {
 		for _, dev := range targetDevices {
 			_ = h.mqttClient.PublishCommand(dev.ID, cmd)
@@ -246,81 +248,5 @@ func (h *DeploymentHandler) Rollback(c fiber.Ctx) error {
 	return c.JSON(fiber.Map{"status": "rolled_back", "deployment_id": dep.ID})
 }
 
-func (h *DeploymentHandler) runCanaryRollout(depID pgtype.UUID, devices []db.Device, cmd map[string]string) {
-	n := len(devices)
-	if n == 0 {
-		return
-	}
 
-	// Calculate slice bounds
-	// Phase 1: 20% (min 1)
-	p1End := int(math.Ceil(float64(n) * 0.20))
-	if p1End < 1 {
-		p1End = 1
-	}
-	if p1End > n {
-		p1End = n
-	}
-
-	// Phase 2: up to 60%
-	p2End := int(math.Ceil(float64(n) * 0.60))
-	if p2End <= p1End && p1End < n {
-		p2End = p1End + 1
-	}
-	if p2End > n {
-		p2End = n
-	}
-
-	phases := []struct {
-		phaseNum   int32
-		percentage int32
-		devices    []db.Device
-	}{
-		{phaseNum: 1, percentage: 20, devices: devices[:p1End]},
-		{phaseNum: 2, percentage: 60, devices: devices[p1End:p2End]},
-		{phaseNum: 3, percentage: 100, devices: devices[p2End:]},
-	}
-
-	for _, p := range phases {
-		if len(p.devices) == 0 {
-			continue
-		}
-
-		ctx := context.Background()
-		// Check if deployment is still running
-		curDep, err := h.queries.GetDeployment(ctx, depID)
-		if err != nil || curDep.Status != "running" {
-			log.Printf("Canary rollout for %v stopped at Phase %d because status is %s", depID, p.phaseNum, curDep.Status)
-			return
-		}
-
-		// Update phase in DB
-		_, _ = h.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
-			ID:               depID,
-			CurrentPhase:     p.phaseNum,
-			CanaryPercentage: p.percentage,
-		})
-		log.Printf("Canary rollout %v entering Phase %d (%d%%) with %d devices", depID, p.phaseNum, p.percentage, len(p.devices))
-
-		// Dispatch command to this phase's devices
-		for _, dev := range p.devices {
-			_ = h.mqttClient.PublishCommand(dev.ID, cmd)
-		}
-
-		// If this is the last phase, no need to wait for next phase
-		if p.phaseNum == 3 || p2End == n && p.phaseNum == 2 {
-			break
-		}
-
-		// Observation wait window (15 seconds)
-		for i := 0; i < 15; i++ {
-			time.Sleep(1 * time.Second)
-			checkDep, err := h.queries.GetDeployment(ctx, depID)
-			if err != nil || checkDep.Status != "running" {
-				log.Printf("Canary rollout %v halted during Phase %d observation window (status: %s)", depID, p.phaseNum, checkDep.Status)
-				return
-			}
-		}
-	}
-}
 
