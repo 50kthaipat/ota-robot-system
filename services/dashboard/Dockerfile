@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+RUN mkdir -p public
 ENV API_INTERNAL_URL=http://api:8000
 RUN npm run build
 
