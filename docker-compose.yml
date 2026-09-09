@@ -1,0 +1,206 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ota
+      POSTGRES_PASSWORD: ota_password
+      POSTGRES_DB: otadb
+    ports:
+      - "5432:5432"
+    networks:
+      - ota-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ota -d otadb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - ota-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ':9001'
+    networks:
+      - ota-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  emqx:
+    image: emqx:5
+    environment:
+      EMQX_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "1883:1883"
+      - "8083:8083"
+      - "18083:18083"
+    networks:
+      - ota-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18083/api/v5/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    restart: unless-stopped
+    build:
+      context: ./services/api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - ./keys:/app/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      emqx:
+        condition: service_healthy
+    networks:
+      - ota-network
+
+  robot-scara:
+    build:
+      context: ./services/robot-sim
+    env_file: .env
+    volumes:
+      - ./keys:/app/keys:ro
+    environment:
+      DEVICE_ID_PREFIX: scara
+      HW_MODEL: scara-v1
+      FACTORY_ID: factory-bkk-01
+    depends_on:
+      - api
+      - emqx
+    networks:
+      - ota-network
+
+  robot-delta:
+    build:
+      context: ./services/robot-sim
+    env_file: .env
+    volumes:
+      - ./keys:/app/keys:ro
+    environment:
+      DEVICE_ID_PREFIX: delta
+      HW_MODEL: delta-v2
+      FACTORY_ID: factory-rayong-02
+    depends_on:
+      - api
+      - emqx
+    networks:
+      - ota-network
+
+  robot-articulated:
+    build:
+      context: ./services/robot-sim
+    env_file: .env
+    volumes:
+      - ./keys:/app/keys:ro
+    environment:
+      DEVICE_ID_PREFIX: articulated
+      HW_MODEL: articulated-v3
+      FACTORY_ID: factory-chonburi-03
+    depends_on:
+      - api
+      - emqx
+    networks:
+      - ota-network
+
+  robot-cartesian:
+    build:
+      context: ./services/robot-sim
+    env_file: .env
+    volumes:
+      - ./keys:/app/keys:ro
+    environment:
+      DEVICE_ID_PREFIX: cartesian
+      HW_MODEL: cartesian-v1
+      FACTORY_ID: factory-ayutthaya-04
+    depends_on:
+      - api
+      - emqx
+    networks:
+      - ota-network
+
+  robot-agv:
+    build:
+      context: ./services/robot-sim
+    env_file: .env
+    volumes:
+      - ./keys:/app/keys:ro
+    environment:
+      DEVICE_ID_PREFIX: agv
+      HW_MODEL: agv-v1
+      FACTORY_ID: factory-samutprakan-05
+    depends_on:
+      - api
+      - emqx
+    networks:
+      - ota-network
+
+  dashboard:
+    build:
+      context: ./services/dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - API_INTERNAL_URL=http://api:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    networks:
+      - ota-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - ota-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+    volumes:
+      - ./infra/grafana:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - ota-network
+
+networks:
+  ota-network:
+    driver: bridge

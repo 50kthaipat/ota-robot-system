@@ -1,0 +1,211 @@
+{
+    "root_group": {
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "health status is 200": {
+                    "path": "::health status is 200",
+                    "id": "ab698ad652ee317628077e42e47eda00",
+                    "passes": 18296,
+                    "fails": 0,
+                    "name": "health status is 200"
+                },
+                "health body is OK": {
+                    "path": "::health body is OK",
+                    "id": "af4ee2448add5e150272305efc75787d",
+                    "passes": 18296,
+                    "fails": 0,
+                    "name": "health body is OK"
+                },
+                "devices status is 200": {
+                    "name": "devices status is 200",
+                    "path": "::devices status is 200",
+                    "id": "0dcff2d157402d45800ec4a41c14266f",
+                    "passes": 18296,
+                    "fails": 0
+                },
+                "devices returned data array": {
+                    "name": "devices returned data array",
+                    "path": "::devices returned data array",
+                    "id": "905a396abaa23e345d4007458c704539",
+                    "passes": 18296,
+                    "fails": 0
+                },
+                "firmware list is 200": {
+                    "fails": 0,
+                    "name": "firmware list is 200",
+                    "path": "::firmware list is 200",
+                    "id": "18671f15f16607b0211796a10abcafe2",
+                    "passes": 18296
+                },
+                "download url status is 200": {
+                    "id": "0200a94175201bc673bf36bd53be0cea",
+                    "passes": 18296,
+                    "fails": 0,
+                    "name": "download url status is 200",
+                    "path": "::download url status is 200"
+                },
+                "has presigned url": {
+                    "name": "has presigned url",
+                    "path": "::has presigned url",
+                    "id": "0d0f2f42bb80204d1fe87d3d84308e14",
+                    "passes": 18296,
+                    "fails": 0
+                },
+                "deployments status is 200": {
+                    "name": "deployments status is 200",
+                    "path": "::deployments status is 200",
+                    "id": "565733a1e026388bded13409cbd2d4c4",
+                    "passes": 18296,
+                    "fails": 0
+                }
+            },
+        "name": "",
+        "path": ""
+    },
+    "metrics": {
+        "k6_successful_requests": {
+            "count": 91480,
+            "rate": 1304.540445001637
+        },
+        "vus_max": {
+            "value": 100,
+            "min": 100,
+            "max": 100
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 0.8556282811762131,
+            "min": 0.038366,
+            "med": 0.5511215,
+            "max": 44.702581,
+            "p(90)": 1.7608372000000003,
+            "p(95)": 2.4093110500000003
+        },
+        "http_req_blocked": {
+            "max": 17.238878,
+            "p(90)": 0.0048951000000000055,
+            "p(95)": 0.006416,
+            "avg": 0.003559019042413622,
+            "min": 0.000582,
+            "med": 0.002307
+        },
+        "http_req_sending": {
+            "max": 2.266817,
+            "p(90)": 0.018093100000000008,
+            "p(95)": 0.027358100000000007,
+            "avg": 0.010603902383034486,
+            "min": 0.001614,
+            "med": 0.006565
+        },
+        "vus": {
+            "max": 99,
+            "value": 1,
+            "min": 1
+        },
+        "data_received": {
+            "count": 140056368,
+            "rate": 1997258.3803676546
+        },
+        "http_req_tls_handshaking": {
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0
+        },
+        "iterations": {
+            "rate": 260.9080890003274,
+            "count": 18296
+        },
+        "http_req_waiting": {
+            "min": 0,
+            "med": 0.4993615,
+            "max": 44.547391,
+            "p(90)": 1.6816527000000001,
+            "p(95)": 2.3175793500000004,
+            "avg": 0.7965005255684171
+        },
+        "http_req_receiving": {
+            "min": 0.004336,
+            "med": 0.037331,
+            "max": 2.234365,
+            "p(90)": 0.08590840000000002,
+            "p(95)": 0.11637875000000004,
+            "avg": 0.04852385322474763
+        },
+        "iteration_duration": {
+            "min": 103.056324,
+            "med": 180.8890195,
+            "max": 278.552119,
+            "p(90)": 240.993291,
+            "p(95)": 248.02243625,
+            "avg": 180.5975592680926
+        },
+        "checks": {
+            "passes": 146368,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "k6_firmware_query_duration": {
+            "max": 44.702581,
+            "p(90)": 0.8848235,
+            "p(95)": 1.19018925,
+            "avg": 0.5160418981198093,
+            "min": 0.170649,
+            "med": 0.39257
+        },
+        "k6_device_query_duration": {
+            "p(95)": 1.93044575,
+            "avg": 0.8746257968954939,
+            "min": 0.04707,
+            "med": 0.6976435,
+            "max": 25.809828,
+            "p(90)": 1.4579360000000001
+        },
+        "k6_success_rate": {
+            "passes": 91480,
+            "fails": 0,
+            "value": 1
+        },
+        "http_req_connecting": {
+            "min": 0,
+            "med": 0,
+            "max": 17.147943,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.00043272063839090496
+        },
+        "http_req_duration": {
+            "min": 0.038366,
+            "med": 0.5511215,
+            "max": 44.702581,
+            "p(90)": 1.7608372000000003,
+            "p(95)": 2.4093110500000003,
+            "avg": 0.8556282811762131,
+            "thresholds": {
+                "p(95)<300": false,
+                "p(99)<800": false
+            }
+        },
+        "http_reqs": {
+            "count": 91480,
+            "rate": 1304.540445001637
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 91480,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "data_sent": {
+            "count": 7848984,
+            "rate": 111929.57018114046
+        }
+    }
+}

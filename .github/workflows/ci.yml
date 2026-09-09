@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-ci:
+    name: Backend Go Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+
+      - name: Go Vet & Unit Tests (API)
+        working-directory: ./services/api
+        env:
+          GOTOOLCHAIN: auto
+        run: |
+          go vet ./...
+          go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Build API Binary
+        working-directory: ./services/api
+        env:
+          GOTOOLCHAIN: auto
+        run: go build -v -o server main.go
+
+      - name: Go Vet & Build (Robot Simulator)
+        working-directory: ./services/robot-sim
+        run: |
+          go vet ./...
+          go build -v -o agent main.go
+
+  frontend-ci:
+    name: Frontend Next.js Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ./services/dashboard/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./services/dashboard
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./services/dashboard
+        run: npm run lint
+
+      - name: Build Next.js Production App
+        working-directory: ./services/dashboard
+        run: npm run build
+
+  docker-build-check:
+    name: Docker Images Build Check
+    needs: [backend-ci, frontend-ci]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/api
+          push: false
+          tags: ota-api:test
+
+      - name: Build Dashboard Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/dashboard
+          push: false
+          tags: ota-dashboard:test
+
+      - name: Build Robot Simulator Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/robot-sim
+          push: false
+          tags: ota-robot-sim:test
+
+  deploy:
+    name: Deploy to Cloud
+    needs: [docker-build-check]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Trigger Cloud Deployment (Webhook)
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "Triggering automated deployment webhook..."
+            curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" || true
+          else
+            echo "No RENDER_DEPLOY_HOOK secret configured. Skipping webhook trigger."
+          fi

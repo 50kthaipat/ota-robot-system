@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'OTA Robot Platform'
+    orgId: 1
+    folder: 'OTA Robot Platform'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
