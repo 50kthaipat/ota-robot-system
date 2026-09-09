@@ -42,8 +42,8 @@ docs/
 
 ---
 
-## 📦 Microservice READMEs
-For service-specific development and testing instructions, refer to:
-- ⚙️ **Backend Service (Go):** [`services/api/README.md`](../services/api/README.md)
-- 💻 **Fleet Dashboard (Next.js):** [`services/dashboard/README.md`](../services/dashboard/README.md)
-- 🤖 **Robot Edge Simulator (Go):** [`services/robot-sim/README.md`](../services/robot-sim/README.md)
+## 📦 Core Domain READMEs
+For component-specific development and testing instructions, refer to:
+- ⚙️ **Backend Service (Go):** [`backend/README.md`](../backend/README.md)
+- 💻 **Fleet Dashboard (Next.js):** [`frontend/README.md`](../frontend/README.md)
+- 🤖 **Robot Edge Simulator (Go):** [`simulator/README.md`](../simulator/README.md)

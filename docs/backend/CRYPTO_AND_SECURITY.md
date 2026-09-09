@@ -59,7 +59,7 @@ sequenceDiagram
 
 ---
 
-## 3. Implementation Details ([`services/api/internal/crypto/ecdsa.go`](../../services/api/internal/crypto/ecdsa.go))
+## 3. Implementation Details ([`backend/internal/crypto/ecdsa.go`](../../backend/internal/crypto/ecdsa.go))
 
 ### 3.1 Keypair Generation
 Uses the NIST P-256 elliptic curve (`elliptic.P256()`) encoded in PKCS#8 / X.509 PEM format:
@@ -99,7 +99,7 @@ func VerifySignature(publicKey *ecdsa.PublicKey, hash []byte, signatureBase64 st
 
 ## 4. Empirical Test Verification
 
-Unit tests in [`services/api/internal/crypto/ecdsa_test.go`](../../services/api/internal/crypto/ecdsa_test.go) verify:
+Unit tests in [`backend/internal/crypto/ecdsa_test.go`](../../backend/internal/crypto/ecdsa_test.go) verify:
 1. Valid signatures pass verification with 100% reliability.
 2. Signatures verified against an altered hash (tampered firmware) return `false` every single time.
 3. Signatures generated with different keypairs fail verification.

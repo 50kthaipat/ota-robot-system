@@ -4,10 +4,10 @@
 *.env.production
 
 # Go build outputs & test coverage
-services/api/server
-services/api/server.exe
-services/robot-sim/robot-sim
-services/robot-sim/robot-sim.exe
+backend/server
+backend/server.exe
+simulator/robot-sim
+simulator/robot-sim.exe
 *.exe
 *.test
 *.prof
@@ -15,9 +15,9 @@ coverage.out
 
 # Node / Next.js
 node_modules/
-services/dashboard/node_modules/
+frontend/node_modules/
 .next/
-services/dashboard/.next/
+frontend/.next/
 out/
 build/
 npm-debug.log*
@@ -38,6 +38,7 @@ desktop.ini
 *~
 .idea/
 .vscode/
+
 # Grafana runtime data
 infra/grafana/*.db
 infra/grafana/unified-search/

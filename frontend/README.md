@@ -13,7 +13,7 @@ The **OTA Fleet Web Dashboard** is an industrial-grade, mission-control web appl
 ## 🏗️ Architecture & Directory Layout
 
 ```
-services/dashboard/
+frontend/
 ├── Dockerfile                  # Production multi-stage Node.js container build
 ├── next.config.mjs             # Next.js configuration & API reverse proxy rewrites
 ├── package.json                # Dependencies and build scripts
@@ -89,4 +89,4 @@ In production and local environments, Next.js acts as a reverse proxy via [`next
 - Calls to `/health` are forwarded to the Go backend healthcheck
 
 Detailed UI/UX component specifications and design tokens are documented in:  
-👉 [`docs/frontend/UI_UX_SPEC.md`](../../docs/frontend/UI_UX_SPEC.md)
+👉 [`docs/frontend/UI_UX_SPEC.md`](../docs/frontend/UI_UX_SPEC.md)

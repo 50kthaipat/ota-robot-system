@@ -26,12 +26,12 @@ jobs:
           check-latest: true
 
       - name: Run Cryptographic Unit Tests (API)
-        working-directory: ./services/api
+        working-directory: ./backend
         run: |
           go test -v -cover ./internal/crypto/...
 
       - name: Verify Robot Simulator Build
-        working-directory: ./services/robot-sim
+        working-directory: ./simulator
         run: |
           go build -v -o agent main.go
 
@@ -47,14 +47,14 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: ./services/dashboard/package-lock.json
+          cache-dependency-path: ./frontend/package-lock.json
 
       - name: Install Dependencies
-        working-directory: ./services/dashboard
+        working-directory: ./frontend
         run: npm ci
 
       - name: Build Next.js Production App
-        working-directory: ./services/dashboard
+        working-directory: ./frontend
         run: npm run build
 
   docker-build-check:
@@ -71,21 +71,21 @@ jobs:
       - name: Build API Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./services/api
+          context: ./backend
           push: false
           tags: ota-api:test
 
       - name: Build Dashboard Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./services/dashboard
+          context: ./frontend
           push: false
           tags: ota-dashboard:test
 
       - name: Build Robot Simulator Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./services/robot-sim
+          context: ./simulator
           push: false
           tags: ota-robot-sim:test
 

@@ -14,7 +14,7 @@ The **OTA Backend API Service** is the central control plane of the Cloud-Based 
 The service adheres to Clean Architecture principles, isolating business logic from external protocols and infrastructure:
 
 ```
-services/api/
+backend/
 ├── Dockerfile                  # Production multi-stage Alpine container build
 ├── go.mod                      # Go module definitions
 ├── go.sum                      # Dependency checksums
@@ -65,8 +65,8 @@ MINIO_BUCKET=firmware
 MINIO_USE_SSL=false
 MQTT_BROKER=tcp://localhost:1883
 API_PORT=8000
-ECDSA_PRIVATE_KEY_PATH=../../keys/private.pem
-ECDSA_PUBLIC_KEY_PATH=../../keys/public.pem
+ECDSA_PRIVATE_KEY_PATH=../keys/private.pem
+ECDSA_PUBLIC_KEY_PATH=../keys/public.pem
 ```
 
 ### 2. Run the Service
@@ -94,4 +94,4 @@ go test -v ./...
 ## 📡 REST API & MQTT Interfaces
 
 Detailed endpoint documentation, request/response bodies, and MQTT topic specifications are documented in:
-👉 [`docs/backend/API_SPEC.md`](../../docs/backend/API_SPEC.md)
+👉 [`docs/backend/API_SPEC.md`](../docs/backend/API_SPEC.md)

@@ -14,8 +14,8 @@
 - [x] ดาวน์โหลด Core Docker Images (`postgres:16`, `redis:7`, `minio/minio`, `emqx:5`)
 - [x] ออกแบบ Database Schema (`000001_init.up.sql`)
 - [x] สร้าง SQL Queries และคอนฟิก `sqlc.yaml`
-- [x] สร้าง Go API Skeleton (`services/api`) ด้วย Fiber v3 + pgx
-- [x] สร้าง Go Robot Simulator Agent (`services/robot-sim`) เชื่อมต่อ MQTT
+- [x] สร้าง Go API Skeleton (`backend/`) ด้วย Fiber v3 + pgx
+- [x] สร้าง Go Robot Simulator Agent (`simulator/`) เชื่อมต่อ MQTT
 - [x] รัน Core Infrastructure (`docker compose up -d postgres redis minio emqx`)
 - [x] รัน Database Migration ครั้งแรก เพื่อสร้างตารางใน PostgreSQL
 - [x] ทดสอบส่งข้อความ Heartbeat จาก Robot Sim เข้าสู่ EMQX และบันทึกสถานะลง Database
@@ -109,7 +109,7 @@
   - [x] ครบทั้ง 12 ตัวชี้วัด พร้อมสคริปต์ตรวจสอบอัตโนมัติ `scripts/evaluate_kpis.ps1`
 - [x] บันทึกผลการทดลองและตาราง KPI ลงใน `docs/KPIS_AND_EVALUATION.md` เรียบร้อย เพื่อใช้ในเล่มรายงานวิทยานิพนธ์
 - [x] **จัดระเบียบโครงสร้าง Monorepo & เอกสาร:**
-  - [x] แยกส่วน Frontend (`services/dashboard`), Backend (`services/api`), และ Edge Simulator (`services/robot-sim`) ชัดเจนพร้อมคู่มือ README ประจำแต่ละ Service
+  - [x] แยกส่วน Frontend (`frontend/`), Backend (`backend/`), และ Edge Simulator (`simulator/`) ชัดเจนพร้อมคู่มือ README ประจำแต่ละ Service
   - [x] จัดหมวดหมู่เอกสาร `docs/backend/` (API Spec, Crypto Security, Database Schema) และ `docs/frontend/` (UI/UX Spec, Design System)
   - [x] สร้าง Master Documentation Hub (`docs/README.md`) และยกเครื่อง `README.md` ระดับโปรเจกต์
 - [ ] อัดวิดีโอ Demo แสดงการใช้งานระบบทุกฟีเจอร์ (พร้อมสำหรับการนำเสนอ)

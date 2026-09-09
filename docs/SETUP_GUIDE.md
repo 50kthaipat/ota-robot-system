@@ -41,10 +41,10 @@ copy .env.example .env
 
 ```powershell
 # 1. Build API Server
-docker build -t ota-robot-system-api ./services/api
+docker build -t ota-robot-system-api ./backend
 
 # 2. Build Robot Simulator & Tag ให้ครบทั้ง 5 ประเภทหุ่นยนต์
-docker build --provenance=false -t ota-robot-system-robot-sim ./services/robot-sim
+docker build --provenance=false -t ota-robot-system-robot-sim ./simulator
 docker tag ota-robot-system-robot-sim:latest ota-robot-system-robot-scara:latest
 docker tag ota-robot-system-robot-sim:latest ota-robot-system-robot-delta:latest
 docker tag ota-robot-system-robot-sim:latest ota-robot-system-robot-articulated:latest
@@ -52,7 +52,7 @@ docker tag ota-robot-system-robot-sim:latest ota-robot-system-robot-cartesian:la
 docker tag ota-robot-system-robot-sim:latest ota-robot-system-robot-agv:latest
 
 # 3. Build Next.js Dashboard
-docker build --provenance=false -t ota-robot-system-dashboard ./services/dashboard
+docker build --provenance=false -t ota-robot-system-dashboard ./frontend
 ```
 
 ### ขั้นตอนที่ 3: เริ่มการทำงานของทุก Services

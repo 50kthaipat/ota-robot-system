@@ -53,7 +53,7 @@ The dashboard uses an industrial mission-control visual theme designed for low e
 
 ---
 
-## 3. Reusable Component Specifications ([`services/dashboard/src/components/`](../../services/dashboard/src/components/))
+## 3. Reusable Component Specifications ([`frontend/src/components/`](../../frontend/src/components/))
 
 1. **`Navbar.tsx`:** Sticky glassmorphism header featuring the Phoenix logo, navigation tabs, active route highlight, and live UTC system clock.
 2. **`StatCard.tsx`:** Metric cards featuring icon accents, glowing backdrop blurs, and animated numeric counters.

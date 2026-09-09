@@ -3,8 +3,8 @@
 [![CI/CD Pipeline](https://github.com/50kthaipat/ota-robot-system/actions/workflows/ci.yml/badge.svg)](https://github.com/50kthaipat/ota-robot-system/actions/workflows/ci.yml)
 [![Thesis KPIs](https://img.shields.io/badge/KPIs%20Passed-12%2F12%20(100%25)-brightgreen)](docs/KPIS_AND_EVALUATION.md)
 [![k6 Throughput](https://img.shields.io/badge/k6%20Throughput-1%2C304%20req%2Fs-blue)](scripts/k6/results.json)
-[![Go Version](https://img.shields.io/badge/Backend-Go%201.22%2B-00ADD8?style=flat&logo=go)](services/api)
-[![Next.js Version](https://img.shields.io/badge/Frontend-Next.js%2014-black?style=flat&logo=next.js)](services/dashboard)
+[![Go Version](https://img.shields.io/badge/Backend-Go%201.22%2B-00ADD8?style=flat&logo=go)](backend)
+[![Next.js Version](https://img.shields.io/badge/Frontend-Next.js%2014-black?style=flat&logo=next.js)](frontend)
 [![MQTT](https://img.shields.io/badge/MQTT-EMQX%20v5-orange)](infra/emqx)
 [![Docker](https://img.shields.io/badge/Docker-13%20Containers-2496ED?style=flat&logo=docker)](docker-compose.yml)
 
@@ -18,16 +18,17 @@ The repository is structured as a modular Monorepo cleanly separating Frontend, 
 
 ```
 ota-robot-system/
-├── services/                   # 🚀 Application Microservices
-│   ├── api/                    # ⚙️ BACKEND: Go + Fiber v3 Control Plane
-│   │   ├── internal/           # Clean Architecture (crypto, db, handlers, mqtt, orchestrator)
-│   │   └── README.md           # Backend developer & testing guide
-│   ├── dashboard/              # 💻 FRONTEND: Next.js 14 + Tailwind CSS Web App
-│   │   ├── src/app/            # App Router pages (fleet overview, deploy wizard, canary inspector)
-│   │   ├── src/components/     # Cyber-Dark UI component library
-│   │   └── README.md           # Frontend developer & design guide
-│   └── robot-sim/              # 🤖 EDGE: Robot Fleet Simulator (MQTT 5.0 + ECDSA Verification)
-│       └── README.md           # Robot fleet simulation guide
+├── backend/                    # ⚙️ BACKEND: Go + Fiber v3 Control Plane
+│   ├── internal/               # Clean Architecture (crypto, db, handlers, mqtt, orchestrator)
+│   └── README.md               # Backend developer & testing guide
+│
+├── frontend/                   # 💻 FRONTEND: Next.js 14 + Tailwind CSS Web App
+│   ├── src/app/                # App Router pages (fleet overview, deploy wizard, canary inspector)
+│   ├── src/components/         # Cyber-Dark UI component library
+│   └── README.md               # Frontend developer & design guide
+│
+├── simulator/                  # 🤖 EDGE: Robot Fleet Simulator (MQTT 5.0 + ECDSA Verification)
+│   └── README.md               # Robot fleet simulation guide
 │
 ├── infra/                      # 🏢 Infrastructure & Telemetry Stack
 │   ├── emqx/                   # EMQX MQTT 5.0 broker configuration
@@ -119,9 +120,9 @@ Validated through automated load tests with **100 Concurrent Robot Virtual Nodes
 ---
 
 ## 📖 Further Documentation
-- ⚙️ [Backend Service Documentation](services/api/README.md)
-- 💻 [Frontend Dashboard Documentation](services/dashboard/README.md)
-- 🤖 [Robot Simulator Documentation](services/robot-sim/README.md)
+- ⚙️ [Backend Service Documentation](backend/README.md)
+- 💻 [Frontend Dashboard Documentation](frontend/README.md)
+- 🤖 [Robot Simulator Documentation](simulator/README.md)
 - 📚 [Master Technical Documentation](docs/README.md)
 - 🛠️ [Setup & Troubleshooting Guide](docs/SETUP_GUIDE.md)
 - 📋 [Engineering Roadmap & Milestones](docs/TASKS.md)
