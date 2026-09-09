@@ -46,3 +46,14 @@ infra/grafana/plugins/
 infra/grafana/csv/
 infra/grafana/pdf/
 infra/grafana/png/
+
+# Cryptographic Private Keys & Secrets (OWASP Compliance)
+keys/private.pem
+keys/*.private.pem
+*.pem.key
+
+# Experimental Datasets & Benchmark Output (Local Research Data)
+data/experiments/
+benchmark_data/
+scripts/k6/results.json
+*.csv
