@@ -108,6 +108,10 @@
   - [x] Unsigned Firmware Installs (= 0 ➡️ ผลจริง: **0 ครั้ง - ECDSA P-256 Blocked**)
   - [x] ครบทั้ง 12 ตัวชี้วัด พร้อมสคริปต์ตรวจสอบอัตโนมัติ `scripts/evaluate_kpis.ps1`
 - [x] บันทึกผลการทดลองและตาราง KPI ลงใน `docs/KPIS_AND_EVALUATION.md` เรียบร้อย เพื่อใช้ในเล่มรายงานวิทยานิพนธ์
+- [x] **จัดระเบียบโครงสร้าง Monorepo & เอกสาร:**
+  - [x] แยกส่วน Frontend (`services/dashboard`), Backend (`services/api`), และ Edge Simulator (`services/robot-sim`) ชัดเจนพร้อมคู่มือ README ประจำแต่ละ Service
+  - [x] จัดหมวดหมู่เอกสาร `docs/backend/` (API Spec, Crypto Security, Database Schema) และ `docs/frontend/` (UI/UX Spec, Design System)
+  - [x] สร้าง Master Documentation Hub (`docs/README.md`) และยกเครื่อง `README.md` ระดับโปรเจกต์
 - [ ] อัดวิดีโอ Demo แสดงการใช้งานระบบทุกฟีเจอร์ (พร้อมสำหรับการนำเสนอ)
 
 ---
