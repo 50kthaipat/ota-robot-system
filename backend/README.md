@@ -91,7 +91,7 @@ go test -v ./...
 
 ---
 
-## 📡 REST API & MQTT Interfaces
+## REST API & MQTT Interfaces
 
 Detailed endpoint documentation, request/response bodies, and MQTT topic specifications are documented in:
-👉 [`docs/backend/API_SPEC.md`](../docs/backend/API_SPEC.md)
+[`docs/design/API_AND_MQTT_SPEC.md`](../docs/design/API_AND_MQTT_SPEC.md)

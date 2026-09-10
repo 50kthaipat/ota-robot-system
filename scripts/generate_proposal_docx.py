@@ -263,11 +263,9 @@ def create_proposal_docx(output_path):
         doc.save(output_path)
         print(f"[SUCCESS] Saved updated Word document to: {output_path}")
     except PermissionError:
-        fallback_path = os.path.join(os.path.dirname(output_path), "PROJECT_PROPOSAL_LATEST.docx")
-        doc.save(fallback_path)
-        print(f"[NOTE] Original file was open in Word. Saved successfully to: {fallback_path}")
+        print(f"[ERROR] Could not save to {output_path}. Please ensure the file is closed in Word.")
 
 if __name__ == "__main__":
-    out = os.path.abspath("docs/PROJECT_PROPOSAL.docx")
+    out = os.path.abspath("docs/academic/PROJECT_PROPOSAL.docx")
     create_proposal_docx(out)
 

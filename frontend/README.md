@@ -89,4 +89,4 @@ In production and local environments, Next.js acts as a reverse proxy via [`next
 - Calls to `/health` are forwarded to the Go backend healthcheck
 
 Detailed UI/UX component specifications and design tokens are documented in:  
-👉 [`docs/frontend/UI_UX_SPEC.md`](../docs/frontend/UI_UX_SPEC.md)
+[`docs/design/UI_UX_SPEC.md`](../docs/design/UI_UX_SPEC.md)

@@ -1,65 +1,67 @@
-# OTA Platform Technical & Academic Documentation
+# Documentation Suite & Architecture Navigation
 
 Welcome to the technical and academic documentation suite for the **Cloud-Based OTA Firmware Management Platform for Robot Fleet**.
 
-This repository is organized into distinct domain areas separating System Architecture, Research & Experimental Plan, Backend, Frontend, Cloud Deployment, and Operations:
+เอกสารทั้งหมดในไดเรกทอรีนี้ถูกจัดหมวดหมู่ออกเป็น **3 กลุ่มหลัก** เพื่อความชัดเจนในการใช้งานทั้งด้านการวิจัยทางวิศวกรรมและการพัฒนาเชิงเทคนิค:
 
 ---
 
-## 1. Documentation Directory Structure
+## 1. โครงสร้างหมวดหมู่เอกสาร (Documentation Directory Structure)
 
 ```
 docs/
-├── README.md                     # Master Documentation Index (This document)
-├── ARCHITECTURE.md               # Global System Architecture & Sequence Flows
-├── EXPERIMENTAL_PLAN.md          # 5-Scenario Research Experimental Plan & Measurement Methodology
-├── PROJECT_PROPOSAL.md           # Academic Project Proposal Specification (KKU Robotics Engineering)
-├── SETUP_GUIDE.md                # Full Installation, Docker Orchestration, & Verification Guide
-├── CLOUD_DEPLOY.md               # Cloud Production Deployment Guide (Free Tier Stack)
-├── TASKS.md                      # Engineering Checklist & Research Execution Roadmap
+├── README.md                           # สารบัญและแผนผังเอกสารทั้งหมด (เอกสารนี้)
 │
-├── backend/                      # Backend Control Plane & Data Plane
-│   ├── API_SPEC.md               # RESTful API & MQTT 5.0 Topic Specifications
-│   ├── CRYPTO_AND_SECURITY.md    # NIST P-256 ECDSA Digital Signatures & Anti-Tamper Pipeline
-│   └── DATABASE_SCHEMA.md        # PostgreSQL Relational Tables & ER-Diagram
+├── academic/                           # หมวดที่ 1: งานวิจัยและเอกสารประกอบเล่มวิทยานิพนธ์
+│   ├── PROJECT_PROPOSAL.md             # แบบเสนอหัวข้อโครงงานวิศวกรรม (Markdown)
+│   ├── PROJECT_PROPOSAL.docx           # แบบเสนอหัวข้อโครงงาน (Microsoft Word ส่งอาจารย์)
+│   └── EXPERIMENTAL_PLAN.md            # ระเบียบวิธีวิจัย 5 สถานการณ์ จุดวัดเวลา และสถิติ (บทที่ 4-5)
 │
-└── frontend/                     # Web Dashboard & Operator UI
-    └── UI_UX_SPEC.md             # UI/UX Specifications, Navigation Hierarchy & Components
+├── design/                             # หมวดที่ 2: สถาปัตยกรรมและข้อกำหนดทางเทคนิค (บทที่ 3)
+│   ├── ARCHITECTURE.md                 # สถาปัตยกรรมภาพรวม, Sequence Flow และ Canary FSM
+│   ├── API_AND_MQTT_SPEC.md            # ข้อกำหนด REST API และ MQTT Topics
+│   ├── DATABASE_SCHEMA.md              # แผนผังฐานข้อมูล PostgreSQL 16 และคำอธิบาย Schema
+│   ├── CRYPTO_SECURITY.md              # สถาปัตยกรรมการลงและตรวจสอบลายเซ็น ECDSA NIST P-256
+│   └── UI_UX_SPEC.md                   # ดีไซน์ซิสเต็มและผังหน้าจอ Next.js 14 Dashboard
+│
+└── operations/                         # หมวดที่ 3: คู่มือการติดตั้งและสาธิตระบบ
+    ├── SETUP_LOCAL.md                  # คู่มือการติดตั้งและรัน Full Stack ผ่าน Docker ในเครื่อง
+    ├── SETUP_CLOUD.md                  # คู่มือเชื่อมต่อ Cloud Free Tier สำหรับการสาธิตระบบ
+    └── TASKS_ROADMAP.md                # แผนงานความก้าวหน้า 6 สัปดาห์และโครงร่างวิทยานิพนธ์
 ```
 
 ---
 
-## 2. Master Navigation Matrix
+## 2. ตารางนำทางเอกสารหลัก (Master Navigation Matrix)
 
+### หมวดที่ 1: วิชาการและวิทยานิพนธ์ (Academic & Thesis)
 | เอกสาร | Path | วัตถุประสงค์และบทบาทในโครงงาน |
 |---|---|---|
-| **System Architecture** | [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) | โครงสร้างระบบภาพรวม ลำดับการสื่อสาร (Sequence Flow) และกลไก Canary FSM |
-| **Experimental Plan** | [`docs/EXPERIMENTAL_PLAN.md`](./EXPERIMENTAL_PLAN.md) | ระเบียบวิธีวิจัย 5 สถานการณ์ การเก็บข้อมูลดิบ ($N=290$), วิธีวัดค่าในโค้ด, สถิติ และ Auxiliary ML |
-| **Project Proposal** | [`docs/PROJECT_PROPOSAL.md`](./PROJECT_PROPOSAL.md) | แบบเสนอโครงงานวิศวกรรม (วัตถุประสงค์, ขอบเขต, วิชาที่เกี่ยวข้อง, เทคโนโลยีหลัก) |
-| **Setup & Operations** | [`docs/SETUP_GUIDE.md`](./SETUP_GUIDE.md) | ขั้นตอนติดตั้ง Docker Compose ทั้งหมด, Health Check, และขั้นตอนทดสอบการทำงาน |
-| **Cloud Deployment** | [`docs/CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) | คู่มือย้ายระบบขึ้น Cloud (Supabase, Cloudflare R2, HiveMQ Cloud, Render, Vercel) |
-| **Tasks & Roadmap** | [`docs/TASKS.md`](./TASKS.md) | รายการงานวิศวกรรมสัปดาห์ที่ 1–6 และโครงร่างบทวิทยานิพนธ์ |
-| **Backend API Spec** | [`docs/backend/API_SPEC.md`](./backend/API_SPEC.md) | รายละเอียด HTTP REST Endpoints, Payloads, Error Codes และหัวข้อ MQTT 5.0 |
-| **Crypto & Security** | [`docs/backend/CRYPTO_AND_SECURITY.md`](./backend/CRYPTO_AND_SECURITY.md) | สถาปัตยกรรมการลงและตรวจสอบลายเซ็นดิจิทัล ECDSA NIST P-256 และ SHA-256 |
-| **Database Schema** | [`docs/backend/DATABASE_SCHEMA.md`](./backend/DATABASE_SCHEMA.md) | แผนผังฐานข้อมูลเชิงสัมพันธ์ PostgreSQL, คีย์หลัก, ดัชนี และความสัมพันธ์ของตาราง |
-| **Frontend UI/UX** | [`docs/frontend/UI_UX_SPEC.md`](./frontend/UI_UX_SPEC.md) | ดีไซน์ซิสเต็ม Next.js 14, โทเค็นสี Cyber-Dark, ผังหน้าเว็บ และคอมโพเนนต์ |
+| **Project Proposal (MD)** | [`academic/PROJECT_PROPOSAL.md`](./academic/PROJECT_PROPOSAL.md) | แบบเสนอโครงงานวิศวกรรม ฉบับภาษาอังกฤษ พร้อมระบุวัตถุประสงค์ ขอบเขต และเทคโนโลยีหลัก |
+| **Project Proposal (DOCX)**| [`academic/PROJECT_PROPOSAL.docx`](./academic/PROJECT_PROPOSAL.docx) | แบบฟอร์มเสนอโครงงานในรูปแบบ Microsoft Word สำหรับส่งอาจารย์ที่ปรึกษา |
+| **Experimental Plan** | [`academic/EXPERIMENTAL_PLAN.md`](./academic/EXPERIMENTAL_PLAN.md) | กรอบการทดลอง 5 สถานการณ์ (N=290), การวัดเวลาในโค้ด, การวิเคราะห์สถิติ, และ Auxiliary ML |
 
----
-
-## 3. สถานะเอกสาร (Document Status & Deprecation Record)
-
-| เอกสาร | สถานะ | หมายเหตุ |
+### หมวดที่ 2: การออกแบบและสถาปัตยกรรม (System Design & Specs)
+| เอกสาร | Path | วัตถุประสงค์และบทบาทในโครงงาน |
 |---|---|---|
-| `docs/API_SPEC.md` | **ลบออกแล้ว (Deleted)** | เอกสารซ้ำซ้อน ถูกควบรวมและย้ายไปอยู่ที่ [`docs/backend/API_SPEC.md`](./backend/API_SPEC.md) |
-| `docs/KPIS_AND_EVALUATION.md` | **ลบออกแล้ว (Deleted)** | ถูกแทนที่ด้วย [`docs/EXPERIMENTAL_PLAN.md`](./EXPERIMENTAL_PLAN.md) ซึ่งเป็นกรอบการทดลอง 5 สถานการณ์ที่ขจัดอคติและระบุจุดวัดค่าทางวิศวกรรมครบถ้วน |
-| `docs/EXPERIMENTAL_PLAN.md` | **เอกสารหลัก (Active - Single Source of Truth)** | กรอบการทดลองเชิงประจักษ์ 5 สถานการณ์, จุดวัดค่าเวลา, สถิติ และ Auxiliary Machine Learning |
-| `docs/ARCHITECTURE.md` | **ปรับปรุงแล้ว (Active)** | ตัด Redis ออกจากสถาปัตยกรรม คงเหลือ PostgreSQL, MinIO S3 Presigned URL, EMQX และ Go Fiber |
+| **System Architecture** | [`design/ARCHITECTURE.md`](./design/ARCHITECTURE.md) | ผังสถาปัตยกรรมรวมของระบบ, ลำดับการสื่อสาร, และ Canary State Machine |
+| **API & MQTT Spec** | [`design/API_AND_MQTT_SPEC.md`](./design/API_AND_MQTT_SPEC.md) | รายละเอียด REST API Endpoints, Payloads, Error Codes และหัวข้อ MQTT 5.0 QoS 1 |
+| **Database Schema** | [`design/DATABASE_SCHEMA.md`](./design/DATABASE_SCHEMA.md) | แผนผังความสัมพันธ์ตาราง (ER-Diagram), Data Types, และ Indexing ใน PostgreSQL 16 |
+| **Crypto & Security** | [`design/CRYPTO_SECURITY.md`](./design/CRYPTO_SECURITY.md) | การเข้ารหัสอสมมาตร ECDSA NIST P-256 และการตรวจสอบความสมบูรณ์ด้วย SHA-256 |
+| **Frontend UI/UX** | [`design/UI_UX_SPEC.md`](./design/UI_UX_SPEC.md) | โทเค็นสี Cyber-Dark, Navigation Hierarchy, และคอมโพเนนต์ Next.js 14 |
+
+### หมวดที่ 3: ปฏิบัติการและคู่มือการติดตั้ง (Operations & Guides)
+| เอกสาร | Path | วัตถุประสงค์และบทบาทในโครงงาน |
+|---|---|---|
+| **Local Setup Guide** | [`operations/SETUP_LOCAL.md`](./operations/SETUP_LOCAL.md) | คำแนะนำการ Build และรันคอนเทนเนอร์ 13 Services ด้วย Docker Compose บนเครื่องคอมพิวเตอร์ |
+| **Cloud Deploy Guide** | [`operations/SETUP_CLOUD.md`](./operations/SETUP_CLOUD.md) | ขั้นตอนย้ายระบบขึ้น Cloud Free Tier (Supabase, Cloudflare R2, HiveMQ, Render, Vercel) |
+| **Roadmap & Tasks** | [`operations/TASKS_ROADMAP.md`](./operations/TASKS_ROADMAP.md) | แผนงานวิศวกรรมสัปดาห์ที่ 1–6 พร้อมโครงร่างเนื้อหาวิทยานิพนธ์ทั้ง 6 บท |
 
 ---
 
-## 4. คู่มือเฉพาะไดเรกทอรีส่วนประกอบ (Sub-system READMEs)
+## 3. คู่มือเฉพาะไดเรกทอรีส่วนประกอบ (Sub-system READMEs)
 
-สำหรับขั้นตอนการพัฒนาและทดสอบเฉพาะส่วนประกอบ สามารถศึกษาเพิ่มเติมได้ที่:
-- **Backend Service (Go Fiber v3):** [`backend/README.md`](../backend/README.md)
-- **Fleet Dashboard (Next.js 14):** [`frontend/README.md`](../frontend/README.md)
-- **Robot Edge Simulator (Go Client):** [`simulator/README.md`](../simulator/README.md)
+สำหรับคำแนะนำการพัฒนาและทดสอบเฉพาะส่วนประกอบ สามารถศึกษาเพิ่มเติมได้ที่:
+- **Backend Service (Go Fiber v3):** [`../backend/README.md`](../backend/README.md)
+- **Fleet Dashboard (Next.js 14):** [`../frontend/README.md`](../frontend/README.md)
+- **Robot Edge Simulator (Go Client):** [`../simulator/README.md`](../simulator/README.md)
