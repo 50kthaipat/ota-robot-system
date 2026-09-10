@@ -1,4 +1,4 @@
-# 🔐 Cryptographic Code Signing & Security Architecture
+# Cryptographic Code Signing & Security Architecture
 
 [![Algorithm](https://img.shields.io/badge/Algorithm-NIST%20P--256%20ECDSA-green)](https://csrc.nist.gov)
 [![Hashing](https://img.shields.io/badge/Digest-SHA--256-blue)](https://csrc.nist.gov)
@@ -52,7 +52,7 @@ sequenceDiagram
             Robot-->>API: Reject: Security Blocked (Tampered Hash)
         else Signature Valid
             Robot->>Robot: 3. Flash to Secondary Slot (Slot B)
-            Robot-->>API: Report Status: Update Success ✅
+            Robot-->>API: Report Status: Update Success
         end
     end
 ```

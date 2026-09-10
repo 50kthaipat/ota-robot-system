@@ -1,4 +1,4 @@
-# 🗄️ PostgreSQL Database Schema & State Store
+# PostgreSQL Database Schema & State Store
 
 [![Database](https://img.shields.io/badge/PostgreSQL-16--alpine-336791?style=flat&logo=postgresql)](https://postgresql.org)
 [![Driver](https://img.shields.io/badge/Driver-pgx%2Fv5-blue)](https://github.com/jackc/pgx)
@@ -101,5 +101,5 @@ Immutable ledger of signed firmware binary images stored in MinIO/S3.
 
 ### 2.3 `deployments` & `deployment_devices`
 Tracks multi-phase rollout lifecycles and per-robot execution states:
-- Handles canary progression (10% ➡️ 50% ➡️ 100%)
+- Handles canary progression (20% -> 60% -> 100%)
 - Records precise update duration and automatic rollback trigger reasons.

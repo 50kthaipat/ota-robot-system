@@ -1,4 +1,4 @@
-# 🏗️ System Architecture & Engineering Design Document
+# System Architecture & Engineering Design Document
 
 ## 1. บทนำ (Executive Summary)
 ระบบ **Cloud-Based OTA (Over-The-Air) Firmware Management Platform for Robot Fleet** ได้รับการออกแบบเพื่อรองรับการบริหารจัดการ อัปเกรด และกู้คืน (Rollback) เฟิร์มแวร์ของหุ่นยนต์อุตสาหกรรมข้ามโรงงาน ผ่านระบบคลาวด์แบบอัตโนมัติ โดยคำนึงถึงความปลอดภัย (Security), ความเสถียร (Reliability) และความสามารถในการวัดผลเชิงประสิทธิภาพ (Observability)
@@ -64,9 +64,9 @@
 - **Tech:** Go 1.22+, Fiber v3, sqlc, pgx/v5
 - **หน้าที่:**
   - จัดการข้อมูล Device Registry และ Firmware Metadata
-  - สร้าง Presigned URL แบบจำกัดเวลา สำหรับให้ Robot ดาวน์โหลดไฟล์จาก Storage
-  - รัน Background Deployment Orchestrator สำหรับทยอยส่งคำสั่งไปยัง Robot ตามเปอร์เซ็นต์ Canary (20% ➡️ 60% ➡️ 100%)
-  - ตรวจจับอัตราความล้มเหลว (Failure Rate Watcher) และสั่ง Trigger Auto-Rollback ทันทีหากข้อผิดพลาดเกิน 20%
+  - สร้าง Presigned URL แบบจำกัดเวลา สำหรับให้ Robot ดาวน์โหลดไฟล์จาก S3-compatible Storage (MinIO / Cloudflare R2)
+  - รัน Background Deployment Orchestrator สำหรับทยอยส่งคำสั่งไปยัง Robot ตามเปอร์เซ็นต์ Canary (20% -> 60% -> 100%)
+  - ตรวจจับอัตราความล้มเหลว (Failure Rate Watcher) และสั่ง Trigger Auto-Rollback ทันทีหากข้อผิดพลาดเกินเกณฑ์ที่กำหนด
 
 ### 3.3 Message Broker & Communication (Transport Layer)
 - **Tech:** EMQX 5 (Local Docker) / HiveMQ Cloud (Production)
@@ -78,7 +78,7 @@
   - `ota/device/{device_id}/error`: Robot แจ้งข้อผิดพลาดที่เกิดขึ้น
 
 ### 3.4 Robot Controller (Edge Layer)
-- **Tech:** Go Compiled Binary (รันบน Linux Container หรือบอร์ด Edge ในอนาคต)
+- **Tech:** Go Compiled Binary (รันบน Linux Container หรือบอร์ด Edge)
 - **กลไกความปลอดภัย:**
   - คำนวณ SHA256 Hash ของไฟล์ที่โหลดมา เทียบกับ Checksum ที่ระบุในคำสั่ง
   - ตรวจสอบลายเซ็นดิจิทัล ECDSA ป้องกันการโจมตีแบบ Man-in-the-Middle (MITM)
@@ -87,7 +87,7 @@
 ### 3.5 Observability & Monitoring Layer
 - **Tech:** Prometheus + Grafana
 - **ตัวชี้วัดที่เก็บ:**
-  - `ota_deployment_success_rate`: เปอร์เซ็นต์ความสำเร็จของการอัปเกรด
+  - `ota_deployment_success_rate`: สัดส่วนความสำเร็จของการอัปเกรด
   - `ota_download_duration_seconds`: ความเร็วและเวลาที่ใช้ดาวน์โหลด
   - `ota_device_status_gauge`: จำนวนหุ่นยนต์ที่ Online/Offline แยกตามโรงงาน
   - `http_request_duration_seconds`: ค่าความหน่วงของ API (Latency p95, p99)

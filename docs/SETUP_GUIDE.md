@@ -1,4 +1,4 @@
-# 🚀 Development Setup & Operations Guide
+# Development Setup & Operations Guide
 
 คู่มือการติดตั้ง ใช้งาน และทดสอบระบบ **Cloud-Based OTA Firmware Management Platform for Robot Fleet**
 
@@ -60,7 +60,7 @@ docker build --provenance=false -t ota-robot-system-dashboard ./frontend
 docker compose up -d
 ```
 
-ตรวจสอบสถานะ Containers ทั้งหมด (ต้องทำงานรวม 13 Services):
+ตรวจสอบสถานะ Containers ทั้งหมด:
 ```powershell
 docker compose ps
 ```
@@ -69,7 +69,7 @@ docker compose ps
 
 ## 4. วิธีเริ่มรันและเข้าใช้งานระบบ (How to Start & Operate the System)
 
-เมื่อผ่านขั้นตอนการเตรียมไฟล์และการ Build ในครั้งแรกเสร็จสิ้นแล้ว ในการใช้งานประจำวันหรือการสาธิตระบบ สามารถเริ่มต้นทำงานได้ง่าย ๆ ตามขั้นตอนดังนี้:
+เมื่อผ่านขั้นตอนการเตรียมไฟล์และการ Build ในครั้งแรกเสร็จสิ้นแล้ว ในการใช้งานประจำวันหรือการสาธิตระบบ สามารถเริ่มต้นทำงานตามขั้นตอนดังนี้:
 
 ### 4.1 คำสั่งเริ่มรันระบบ (Quick Start)
 เปิด PowerShell ในโฟลเดอร์โปรเจกต์ แล้วสั่งรัน Container ทั้งหมดในโหมด Background:
@@ -85,18 +85,18 @@ docker compose up -d
    # ผลลัพธ์ที่ได้: OK
    ```
 2. **ตรวจสอบสถานะหุ่นยนต์ทั้ง 5 เครื่อง:**
-   หุ่นยนต์แต่ละตัวจะเชื่อมต่อ EMQX MQTT Broker และส่ง Heartbeat รายงานสถานะทันที:
+   หุ่นยนต์แต่ละตัวจะเชื่อมต่อ EMQX MQTT Broker และส่ง Heartbeat รายงานสถานะ:
    ```powershell
    Invoke-RestMethod -Uri "http://localhost:8000/api/v1/devices" | Select-Object -ExpandProperty data | Format-Table id, hw_model, factory_id, current_version, status
    ```
-   *(ต้องเห็นหุ่นยนต์ครบทั้ง 5 โรงงาน และมีสถานะเป็น `online`)*
+   *(หุ่นยนต์ครบทั้ง 5 โรงงาน และมีสถานะเป็น online)*
 
 ### 4.3 เข้าสู่ Web Management Portal
 เปิด Web Browser แล้วเข้าไปที่:
-👉 **[http://localhost:3000](http://localhost:3000)**
+**[http://localhost:3000](http://localhost:3000)**
 
-- **หน้า Fleet Overview (`/`):** สังเกตรายชื่อหุ่นยนต์ 5 ตัว สถานะไฟเขียว `Online`, Firmware Version ปัจจุบัน และโรงงานประจำการ
-- **หน้า Firmware Catalog (`/firmware`):** ตรวจสอบ Firmware ที่มีในระบบ พร้อม Badge ยืนยันความปลอดภัย `ECDSA Signed` หรืออัปโหลด Firmware ใหม่
+- **หน้า Fleet Overview (`/`):** แสดงรายชื่อหุ่นยนต์ 5 ตัว สถานะ Online, Firmware Version ปัจจุบัน และโรงงานประจำการ
+- **หน้า Firmware Catalog (`/firmware`):** ตรวจสอบ Firmware ที่มีในระบบ พร้อมสถานะยืนยันความปลอดภัย ECDSA Signed หรืออัปโหลด Firmware ใหม่
 - **หน้า Deployment Launcher (`/deploy`):** เลือกเวอร์ชัน Firmware ที่ต้องการอัปเกรด, เลือกกลุ่มหุ่นยนต์เป้าหมาย และเลือกกลยุทธ์การอัปเดต (Direct Rollout หรือ Canary Rollout)
 - **หน้า Live Monitor (`/deployments/[id]`):** ติดตามความคืบหน้าการดาวน์โหลดและติดตั้ง (Progress 0-100%) ของหุ่นยนต์แต่ละตัวแบบ Realtime
 
@@ -105,7 +105,7 @@ docker compose up -d
   ```powershell
   docker compose stop
   ```
-- **เมื่อต้องการปิดระบบและคืน Memory/CPU:**
+- **เมื่อต้องการปิดระบบและคืนทรัพยากร:**
   ```powershell
   docker compose down
   ```
@@ -123,7 +123,6 @@ docker compose up -d
 | **Grafana** | [http://localhost:3001](http://localhost:3001) | Metrics Dashboard (User: `admin` / Password: `admin`) |
 | **Prometheus** | [http://localhost:9090](http://localhost:9090) | Time-series Metrics Engine Scraper (`/metrics`) |
 | **PostgreSQL** | `localhost:5432` | DB: `otadb`, User: `ota`, Pass: `ota_password` |
-| **Redis Cache** | `localhost:6379` | In-memory Cache & Lock Engine |
 
 ---
 
@@ -146,15 +145,15 @@ docker compose up -d
 ### 7.1 การอัปโหลด Firmware พร้อมเซ็นลายเซ็นดิจิทัล (ECDSA Signing)
 1. เปิดหน้าเบราว์เซอร์ไปที่ [http://localhost:3000/firmware](http://localhost:3000/firmware)
 2. อัปโหลดไฟล์ Binary `.bin` พร้อมระบุ Version เช่น `1.2.0`
-3. ระบบจะคำนวณ SHA256 และเซ็นลายเซ็น ECDSA P-256 อัตโนมัติ โดยจะแสดง Badge สีเขียว `ECDSA Signed` ในตาราง
+3. ระบบจะคำนวณ SHA256 และเซ็นลายเซ็น ECDSA P-256 อัตโนมัติ โดยจะแสดงสถานะ ECDSA Signed ในตาราง
 
 ### 7.2 การปล่อยอัปเดตแบบ Canary Phased Rollout (3 Phases)
 1. ไปที่หน้า [http://localhost:3000/deploy](http://localhost:3000/deploy)
 2. เลือก Firmware Version เป้าหมาย
 3. เลือก Strategy เป็น **Canary Rollout** และตั้งค่า Rollback Threshold (เช่น 20%)
-4. กดยืนยันการ Deploy และระบบจะพาไปยังหน้า Live Monitor:
-   - **Phase 1 (20%):** หุ่นยนต์ 1 ตัวแรกจะเริ่มดาวน์โหลด ตรวจสอบลายเซ็น และติดตั้ง (รอสังเกตการณ์ 15 วินาที)
-   - **Phase 2 (60%):** ขยายการติดตั้งไปยังหุ่นยนต์ตัวที่ 2 และ 3 (รอสังเกตการณ์ 15 วินาที)
+4. กดยืนยันการ Deploy และระบบจะแสดงผลในหน้า Live Monitor:
+   - **Phase 1 (20%):** หุ่นยนต์ตัวแรกจะเริ่มดาวน์โหลด ตรวจสอบลายเซ็น และติดตั้ง (สังเกตการณ์ 15 วินาที)
+   - **Phase 2 (60%):** ขยายการติดตั้งไปยังหุ่นยนต์ตัวถัดไป (สังเกตการณ์ 15 วินาที)
    - **Phase 3 (100%):** ปล่อยอัปเดตให้กับหุ่นยนต์ที่เหลือทั้งหมดจนเสร็จสมบูรณ์
 
 ### 7.3 การทดสอบระบบความปลอดภัย & Automated Rollback

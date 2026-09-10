@@ -1,4 +1,4 @@
-# 🖥️ Frontend UI/UX Design System & Pages Specification
+# Frontend UI/UX Design System & Pages Specification
 
 [![Next.js](https://img.shields.io/badge/Framework-Next.js%2014-black?style=flat&logo=next.js)](https://nextjs.org)
 [![Tailwind](https://img.shields.io/badge/CSS-Tailwind%203.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com)
@@ -42,7 +42,7 @@ The dashboard uses an industrial mission-control visual theme designed for low e
 └── Table of deployments with progress bars, status tags, and inspect links
 
 /deployments/[id] (Live Canary Inspector)
-├── Phase Stepper Visualizer (Phase 1: 10% ➡️ Phase 2: 50% ➡️ Phase 3: 100%)
+├── Phase Stepper Visualizer (Phase 1: 20% -> Phase 2: 60% -> Phase 3: 100%)
 ├── Live Device Upgrade Progress Table
 └── Emergency Manual Rollback Button (Instant reversion to golden image)
 

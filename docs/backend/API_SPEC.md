@@ -1,4 +1,4 @@
-# 📡 Backend API & MQTT Protocols Specification
+# Backend API & MQTT Protocols Specification
 
 [![REST API](https://img.shields.io/badge/API-RESTful-blue)](http://localhost:8000/api/v1)
 [![MQTT](https://img.shields.io/badge/Broker-EMQX%20v5-orange)](http://localhost:18083)
@@ -133,7 +133,7 @@ Documenting the Control Plane (HTTP REST API) and Data Plane (MQTT 5.0 Edge Brok
 ## 2. MQTT 5.0 Protocol & Telemetry Topics (Data Plane)
 
 ### 2.1 Heartbeat Telemetry: `ota/device/{device_id}/status`
-- **Direction:** Robot Node ➡️ EMQX Broker ➡️ API Engine
+- **Direction:** Robot Node -> EMQX Broker -> API Engine
 - **Interval:** 5.0 seconds
 - **Payload:**
   ```json
@@ -149,7 +149,7 @@ Documenting the Control Plane (HTTP REST API) and Data Plane (MQTT 5.0 Edge Brok
   ```
 
 ### 2.2 Command Dispatch: `ota/device/{device_id}/command`
-- **Direction:** API Orchestrator ➡️ Robot Node
+- **Direction:** API Orchestrator -> Robot Node
 - **QoS Level:** QoS 1 (At least once delivery)
 - **Update Command Payload:**
   ```json
@@ -171,7 +171,7 @@ Documenting the Control Plane (HTTP REST API) and Data Plane (MQTT 5.0 Edge Brok
   ```
 
 ### 2.3 Progress & Verification State: `ota/device/{device_id}/progress`
-- **Direction:** Robot Node ➡️ API Orchestrator
+- **Direction:** Robot Node -> API Orchestrator
 - **Payload:**
   ```json
   {
