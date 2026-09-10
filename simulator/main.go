@@ -83,7 +83,10 @@ func main() {
 	if hwModel == "" {
 		hwModel = "sim-v1"
 	}
-	deviceID = fmt.Sprintf("%s-%s", prefix, uuid.New().String()[:8])
+	deviceID = os.Getenv("DEVICE_ID")
+	if deviceID == "" {
+		deviceID = fmt.Sprintf("%s-%s", prefix, uuid.New().String()[:8])
+	}
 
 	agentStateMachine = agent.NewStateMachine(deviceID, func(from, to agent.State, event agent.Event) {
 		log.Printf("Robot %s: FSM transition [%s] -> [%s] on event (%s)", deviceID, from, to, event)
