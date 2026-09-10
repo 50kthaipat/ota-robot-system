@@ -1,11 +1,6 @@
 # Cloud-Based OTA Firmware Management Platform for Robot Fleet
 
-[![CI/CD Pipeline](https://github.com/50kthaipat/ota-robot-system/actions/workflows/ci.yml/badge.svg)](https://github.com/50kthaipat/ota-robot-system/actions/workflows/ci.yml)
-[![Experimental Plan](https://img.shields.io/badge/Evaluation-5%20Empirical%20Scenarios-blue)](docs/academic/EXPERIMENTAL_PLAN.md)
-[![Go Version](https://img.shields.io/badge/Backend-Go%201.22%2B-00ADD8?style=flat&logo=go)](backend)
-[![Next.js Version](https://img.shields.io/badge/Frontend-Next.js%2014-black?style=flat&logo=next.js)](frontend)
-[![MQTT](https://img.shields.io/badge/MQTT-EMQX%20v5-orange)](infra/emqx)
-[![Docker](https://img.shields.io/badge/Docker-Full%20Stack%20Compose-2496ED?style=flat&logo=docker)](docker-compose.yml)
+
 
 An enterprise-grade, academic-validated **Over-The-Air (OTA) Firmware Management Platform** designed to securely orchestrate, deploy, monitor, and roll back firmware across distributed industrial robot fleets in multi-factory environments.
 
