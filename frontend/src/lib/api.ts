@@ -75,6 +75,20 @@ export const api = {
     return fetchJSON<{ url: string; checksum: string }>(`/api/v1/firmware/${id}/url`);
   },
 
+  async updateFirmware(id: string, payload: { version?: string; release_notes?: string }): Promise<FirmwareVersion> {
+    return fetchJSON<FirmwareVersion>(`/api/v1/firmware/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteFirmware(id: string): Promise<{ message: string; id: string; mode: string }> {
+    return fetchJSON<{ message: string; id: string; mode: string }>(`/api/v1/firmware/${id}`, {
+      method: "DELETE",
+    });
+  },
+
   async getDeployments(): Promise<{ data: Deployment[] }> {
     return fetchJSON<{ data: Deployment[] }>("/api/v1/deployments");
   },

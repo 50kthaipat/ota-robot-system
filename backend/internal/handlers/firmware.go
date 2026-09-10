@@ -9,6 +9,7 @@ import (
     "io"
     "log"
     "os"
+    "strings"
     "time"
     
     "github.com/gofiber/fiber/v3"
@@ -172,6 +173,116 @@ func (h *FirmwareHandler) GetDownloadURL(c fiber.Ctx) error {
         "checksum":  fw.Sha256Checksum,
         "signature": fw.EcdsaSignature.String,
     })
+}
+
+func (h *FirmwareHandler) Delete(c fiber.Ctx) error {
+    id := c.Params("id")
+    uid, err := uuid.Parse(id)
+    if err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "invalid id format"})
+    }
+
+    fwUUID := pgtype.UUID{Bytes: uid, Valid: true}
+    fw, err := h.queries.GetFirmwareVersion(c.Context(), fwUUID)
+    if err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "firmware not found"})
+    }
+
+    // Check if this firmware has been referenced in any deployments
+    var deploymentCount int64
+    err = h.db.QueryRow(c.Context(), "SELECT COUNT(*) FROM deployments WHERE firmware_version_id = $1", fwUUID).Scan(&deploymentCount)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": "failed to verify deployment references: " + err.Error()})
+    }
+
+    if deploymentCount > 0 {
+        // Soft delete to preserve historical deployment audit records
+        err = h.queries.DeactivateFirmwareVersion(c.Context(), fwUUID)
+        if err != nil {
+            return c.Status(500).JSON(fiber.Map{"error": "failed to deactivate firmware: " + err.Error()})
+        }
+        log.Printf("[INFO] Soft-deleted firmware v%s (%s) — referenced in %d deployments", fw.Version, id, deploymentCount)
+        return c.JSON(fiber.Map{
+            "message": "firmware deactivated successfully (retained for deployment history)",
+            "id":      id,
+            "mode":    "soft_delete",
+        })
+    }
+
+    // Hard delete: remove object from storage bucket and row from database
+    if fw.StorageKey != "" {
+        _ = h.minio.RemoveObject(context.Background(), h.bucket, fw.StorageKey, minio.RemoveObjectOptions{})
+    }
+
+    _, err = h.db.Exec(c.Context(), "DELETE FROM firmware_versions WHERE id = $1", fwUUID)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": "failed to delete firmware record: " + err.Error()})
+    }
+
+    log.Printf("[INFO] Hard-deleted firmware v%s (%s) and removed storage object %s", fw.Version, id, fw.StorageKey)
+    return c.JSON(fiber.Map{
+        "message": "firmware and storage object deleted successfully",
+        "id":      id,
+        "mode":    "hard_delete",
+    })
+}
+
+type UpdateFirmwareRequest struct {
+    Version      *string `json:"version"`
+    ReleaseNotes *string `json:"release_notes"`
+}
+
+func (h *FirmwareHandler) Update(c fiber.Ctx) error {
+    id := c.Params("id")
+    uid, err := uuid.Parse(id)
+    if err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "invalid id format"})
+    }
+
+    var req UpdateFirmwareRequest
+    if err := c.Bind().Body(&req); err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "invalid request body"})
+    }
+
+    fwUUID := pgtype.UUID{Bytes: uid, Valid: true}
+    existing, err := h.queries.GetFirmwareVersion(c.Context(), fwUUID)
+    if err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "firmware not found"})
+    }
+
+    newVersion := existing.Version
+    if req.Version != nil && strings.TrimSpace(*req.Version) != "" {
+        newVersion = strings.TrimSpace(*req.Version)
+    }
+
+    newNotes := existing.ReleaseNotes.String
+    if req.ReleaseNotes != nil {
+        newNotes = strings.TrimSpace(*req.ReleaseNotes)
+    }
+
+    var updated db.FirmwareVersion
+    row := h.db.QueryRow(c.Context(),
+        "UPDATE firmware_versions SET version = $1, release_notes = $2 WHERE id = $3 RETURNING id, version, storage_key, file_size, sha256_checksum, ecdsa_signature, release_notes, is_active, uploaded_by, created_at",
+        newVersion, pgtype.Text{String: newNotes, Valid: true}, fwUUID,
+    )
+    err = row.Scan(
+        &updated.ID,
+        &updated.Version,
+        &updated.StorageKey,
+        &updated.FileSize,
+        &updated.Sha256Checksum,
+        &updated.EcdsaSignature,
+        &updated.ReleaseNotes,
+        &updated.IsActive,
+        &updated.UploadedBy,
+        &updated.CreatedAt,
+    )
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": "failed to update firmware: " + err.Error()})
+    }
+
+    log.Printf("[INFO] Updated firmware %s: version=%s, notes=%s", id, newVersion, newNotes)
+    return c.JSON(updated)
 }
 
 func bytesReader(d []byte) io.Reader { return bytes.NewReader(d) }

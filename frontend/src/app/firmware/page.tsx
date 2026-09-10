@@ -13,6 +13,9 @@ import {
   Rocket,
   RefreshCw,
   ShieldCheck,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { FirmwareVersion } from "@/lib/types";
@@ -27,6 +30,65 @@ export default function FirmwarePage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Edit Firmware State
+  const [editingFw, setEditingFw] = useState<FirmwareVersion | null>(null);
+  const [editVersion, setEditVersion] = useState<string>("");
+  const [editNotes, setEditNotes] = useState<string>("");
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  // Delete Firmware State
+  const [deletingFw, setDeletingFw] = useState<FirmwareVersion | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const openEditModal = (fw: FirmwareVersion) => {
+    setEditingFw(fw);
+    setEditVersion(fw.version);
+    setEditNotes(fw.release_notes || "");
+    setUpdateError(null);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFw) return;
+    if (!editVersion.trim()) {
+      setUpdateError("Version tag is required");
+      return;
+    }
+    setIsUpdating(true);
+    setUpdateError(null);
+    try {
+      await api.updateFirmware(editingFw.id, {
+        version: editVersion.trim(),
+        release_notes: editNotes.trim(),
+      });
+      setUploadSuccess(`Firmware v${editVersion} updated successfully`);
+      setEditingFw(null);
+      await loadFirmwares();
+    } catch (err: any) {
+      setUpdateError(err.message || "Failed to update firmware");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingFw) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.deleteFirmware(deletingFw.id);
+      setUploadSuccess(`Firmware v${deletingFw.version} deleted successfully`);
+      setDeletingFw(null);
+      await loadFirmwares();
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete firmware");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const loadFirmwares = async () => {
     try {
@@ -320,17 +382,31 @@ export default function FirmwarePage() {
                     <td className="px-6 py-4 text-slate-400 font-sans">
                       {new Date(fw.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-right font-sans space-x-3">
+                    <td className="px-6 py-4 text-right font-sans space-x-2">
                       <button
                         onClick={() => handleDownload(fw.id)}
-                        className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition"
+                        className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition px-2 py-1 rounded bg-slate-800/60 hover:bg-slate-800"
                         title="Download Binary via Presigned S3 URL"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" /> Presigned URL
+                        <ExternalLink className="w-3.5 h-3.5" /> Presigned
+                      </button>
+                      <button
+                        onClick={() => openEditModal(fw)}
+                        className="inline-flex items-center gap-1 text-xs text-amber-400/90 hover:text-amber-300 transition px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20"
+                        title="Edit Version Tag & Release Notes"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingFw(fw)}
+                        className="inline-flex items-center gap-1 text-xs text-rose-400/90 hover:text-rose-300 transition px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20"
+                        title="Delete Firmware Release"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
                       </button>
                       <Link
                         href={`/deploy?firmware=${fw.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition px-2 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20"
                       >
                         Deploy <Rocket className="w-3 h-3" />
                       </Link>
@@ -342,6 +418,134 @@ export default function FirmwarePage() {
           </table>
         </div>
       </div>
+
+      {/* Edit Firmware Modal */}
+      {editingFw && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-amber-400" />
+                Edit Firmware Release
+              </h3>
+              <button
+                onClick={() => setEditingFw(null)}
+                className="text-slate-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {updateError && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {updateError}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Version Tag <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editVersion}
+                  onChange={(e) => setEditVersion(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-amber-400 font-mono"
+                  placeholder="e.g. 1.2.0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Release Notes / Changelog
+                </label>
+                <textarea
+                  rows={3}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-amber-400"
+                  placeholder="Description of changes and updates..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingFw(null)}
+                  className="px-4 py-2 text-xs font-medium rounded-lg text-slate-300 hover:bg-slate-800 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingFw && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2 text-rose-400">
+                <Trash2 className="w-5 h-5 text-rose-400" />
+                Confirm Firmware Deletion
+              </h3>
+              <button
+                onClick={() => setDeletingFw(null)}
+                className="text-slate-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {deleteError}
+              </div>
+            )}
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Are you sure you want to delete firmware release{" "}
+              <span className="font-bold text-white font-mono">v{deletingFw.version}</span>?
+            </p>
+            <p className="text-[11px] text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-800 leading-relaxed">
+              If this version was already deployed in fleet rollouts, it will be safely deactivated to preserve historical audit logs. If unused, its storage object in Cloudflare R2 will also be permanently deleted.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingFw(null)}
+                className="px-4 py-2 text-xs font-medium rounded-lg text-slate-300 hover:bg-slate-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-rose-600/20"
+              >
+                {isDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
