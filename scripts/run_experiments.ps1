@@ -1,6 +1,6 @@
 # scripts/run_experiments.ps1
-# Automated Unbiased Multi-Scenario Empirical Experiment Runner
-# Generates per-trial raw CSV datasets into data/experiments/ for thesis analysis.
+# Automated Multi-Scenario Simulation Experiment Runner
+# Generates per-trial synthetic simulation datasets into data/experiments/ for thesis analysis.
 
 param (
     [int]$TrialsPerScenario = 10
@@ -14,7 +14,7 @@ if (-not (Test-Path $OutputDir)) {
 }
 
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host " OTA ROBOT SYSTEM - EMPIRICAL MULTI-SCENARIO EXPERIMENT RUNNER" -ForegroundColor Cyan
+Write-Host " OTA ROBOT SYSTEM - SIMULATION MULTI-SCENARIO EXPERIMENT RUNNER" -ForegroundColor Cyan
 Write-Host " Output Directory: $OutputDir" -ForegroundColor Yellow
 Write-Host " Trials Per Scenario: $TrialsPerScenario" -ForegroundColor Yellow
 Write-Host "=================================================================" -ForegroundColor Cyan

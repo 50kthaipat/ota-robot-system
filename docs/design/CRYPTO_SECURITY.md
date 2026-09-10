@@ -97,7 +97,7 @@ func VerifySignature(publicKey *ecdsa.PublicKey, hash []byte, signatureBase64 st
 
 ---
 
-## 4. Empirical Test Verification
+## 4. Automated Test Verification
 
 Unit tests in [`backend/internal/crypto/ecdsa_test.go`](../../backend/internal/crypto/ecdsa_test.go) verify:
 1. Valid signatures pass verification with 100% reliability.

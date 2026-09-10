@@ -35,7 +35,7 @@ ota-robot-system/
 │
 ├── scripts/                    # Automation & Benchmarking
 │   ├── k6/                     # k6 load testing script & results
-│   ├── run_experiments.ps1     # Automated runner across all 5 empirical scenarios
+│   ├── run_experiments.ps1     # Automated runner across all 5 simulation scenarios
 │   ├── statistical_analysis.py # Statistical testing script (Shapiro-Wilk, Mann-Whitney U)
 │   └── gen_keys.go             # Cryptographic ECDSA P-256 keypair generator
 │

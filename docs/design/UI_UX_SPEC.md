@@ -42,7 +42,7 @@ The dashboard uses an industrial mission-control visual theme designed for low e
 └── Table of deployments with progress bars, status tags, and inspect links
 
 /deployments/[id] (Live Canary Inspector)
-├── Phase Stepper Visualizer (Phase 1: 20% -> Phase 2: 60% -> Phase 3: 100%)
+├── Phase Stepper Visualizer (Phase 1: 20% → Phase 2: 60% → Phase 3: 100%)
 ├── Live Device Upgrade Progress Table
 └── Emergency Manual Rollback Button (Instant reversion to golden image)
 

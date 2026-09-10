@@ -65,7 +65,7 @@
 - **หน้าที่:**
   - จัดการข้อมูล Device Registry และ Firmware Metadata
   - สร้าง Presigned URL แบบจำกัดเวลา สำหรับให้ Robot ดาวน์โหลดไฟล์จาก S3-compatible Storage (MinIO / Cloudflare R2)
-  - รัน Background Deployment Orchestrator สำหรับทยอยส่งคำสั่งไปยัง Robot ตามเปอร์เซ็นต์ Canary (20% -> 60% -> 100%)
+  - รัน Background Deployment Orchestrator สำหรับทยอยส่งคำสั่งไปยัง Robot ตามเปอร์เซ็นต์ Canary (20% → 60% → 100%)
   - ตรวจจับอัตราความล้มเหลว (Failure Rate Watcher) และสั่ง Trigger Auto-Rollback ทันทีหากข้อผิดพลาดเกินเกณฑ์ที่กำหนด
 
 ### 3.3 Message Broker & Communication (Transport Layer)

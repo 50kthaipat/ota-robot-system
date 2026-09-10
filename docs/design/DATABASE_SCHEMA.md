@@ -48,7 +48,7 @@ erDiagram
         string target_factory "all / factory_id"
         string target_hw_model "all / model"
         string status "pending / in_progress / completed / rolled_back"
-        int current_phase "1 (10%), 2 (50%), 3 (100%)"
+        int current_phase "1 (20%), 2 (60%), 3 (100%)"
         int total_devices
         int updated_devices
         int failed_devices
@@ -101,5 +101,5 @@ Immutable ledger of signed firmware binary images stored in MinIO/S3.
 
 ### 2.3 `deployments` & `deployment_devices`
 Tracks multi-phase rollout lifecycles and per-robot execution states:
-- Handles canary progression (20% -> 60% -> 100%)
+- Handles canary progression (20% → 60% → 100%)
 - Records precise update duration and automatic rollback trigger reasons.

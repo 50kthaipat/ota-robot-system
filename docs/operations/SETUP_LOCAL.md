@@ -124,6 +124,10 @@ docker compose up -d
 | **Prometheus** | [http://localhost:9090](http://localhost:9090) | Time-series Metrics Engine Scraper (`/metrics`) |
 | **PostgreSQL** | `localhost:5432` | DB: `otadb`, User: `ota`, Pass: `ota_password` |
 
+> **หมายเหตุด้านโพรโทคอลสื่อสาร (Local Plaintext vs Production TLS):**
+> - **การรันในเครื่อง (Local Development & Container Testing):** หุ่นยนต์และเซิร์ฟเวอร์เชื่อมต่อ EMQX Broker ผ่านโปรโตคอล MQTT แบบ Plaintext (TCP พอร์ต 1883 แบบ Anonymous) เพื่อความสะดวกรวดเร็วในการประเมินและลด overhead ในการทดสอบ
+> - **การขึ้นระบบจริงบนคลาวด์ (Production Cloud Deployment):** กำหนดให้เปิดใช้งาน TLS 1.2+ (พอร์ต 8883 / `ssl://`) ร่วมกับการยืนยันตัวตนด้วย Username/Password หรือ Client Certificates ตามมาตรฐาน Zero-Trust (ดูรายละเอียดใน `SETUP_CLOUD.md`)
+
 ---
 
 ## 6. โครงสร้าง Robot Fleet ประจำโรงงานต่าง ๆ

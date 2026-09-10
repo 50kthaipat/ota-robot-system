@@ -133,30 +133,33 @@ Documenting the Control Plane (HTTP REST API) and Data Plane (MQTT 5.0 Edge Brok
 ## 2. MQTT 5.0 Protocol & Telemetry Topics (Data Plane)
 
 ### 2.1 Heartbeat Telemetry: `ota/device/{device_id}/status`
-- **Direction:** Robot Node -> EMQX Broker -> API Engine
+- **Direction:** Robot Node → EMQX Broker → API Engine
 - **Interval:** 5.0 seconds
-- **Payload:**
+- **Payload Schema (JSON):**
   ```json
   {
-    "device_id": "cartesian-3483abae",
-    "factory_id": "factory-ayutthaya-04",
-    "hw_model": "cartesian-v1",
+    "device_id": "scara-b5b59b03",
+    "factory_id": "factory-bkk-01",
+    "hw_model": "scara-v1",
     "current_version": "1.0.0",
     "status": "online",
-    "uptime_seconds": 86400,
-    "timestamp": "2026-09-09T14:24:00Z"
+    "fsm_state": "online",
+    "timestamp": "2026-03-31T10:00:00Z"
   }
   ```
 
+---
+
 ### 2.2 Command Dispatch: `ota/device/{device_id}/command`
-- **Direction:** API Orchestrator -> Robot Node
+- **Direction:** API Orchestrator → Robot Node
 - **QoS Level:** QoS 1 (At least once delivery)
 - **Update Command Payload:**
   ```json
   {
     "action": "update",
     "version": "1.1.0",
-    "download_url": "http://minio:9000/firmware/cartesian-v1/1.1.0/firmware.bin?token=...",
+    "hw_model": "scara-v1",
+    "download_url": "http://minio:9000/firmware/scara-v1/1.1.0/firmware.bin?token=...",
     "sha256_checksum": "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
     "signature": "MEQCIAxY1a8B8d...NIST-P256-Base64..."
   }
@@ -165,19 +168,21 @@ Documenting the Control Plane (HTTP REST API) and Data Plane (MQTT 5.0 Edge Brok
   ```json
   {
     "action": "rollback",
-    "target_version": "1.0.0",
-    "reason": "watchdog_timeout_detected"
+    "version": "1.0.0"
   }
   ```
 
+---
+
 ### 2.3 Progress & Verification State: `ota/device/{device_id}/progress`
-- **Direction:** Robot Node -> API Orchestrator
-- **Payload:**
+- **Direction:** Robot Node → API Orchestrator
+- **Payload Schema (JSON):**
   ```json
   {
-    "device_id": "cartesian-3483abae",
-    "step": "verifying_signature",
-    "percent": 85,
-    "status": "installing"
+    "device_id": "scara-b5b59b03",
+    "progress": 20,
+    "status": "verified",
+    "fsm_state": "verifying",
+    "ecdsa_verify_ms": 12
   }
   ```

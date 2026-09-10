@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -38,6 +39,7 @@ func NewDeploymentHandler(pool *pgxpool.Pool, mc *minio.Client, bucket string, m
 type CreateDeploymentRequest struct {
 	FirmwareID        string   `json:"firmware_id"`
 	Strategy          string   `json:"strategy"`
+	HwModel           string   `json:"hw_model"`
 	DeviceIDs         []string `json:"device_ids"`
 	RollbackThreshold float64  `json:"rollback_threshold"`
 }
@@ -74,13 +76,25 @@ func (h *DeploymentHandler) CreateDeployment(c fiber.Ctx) error {
 		threshold = 0.20
 	}
 
+	targetHw := req.HwModel
+	if targetHw == "" {
+		targetHw = "all"
+	}
+
 	var targetDevices []db.Device
 	if len(req.DeviceIDs) > 0 {
 		for _, devID := range req.DeviceIDs {
 			dev, err := h.queries.GetDevice(ctx, devID)
-			if err == nil {
-				targetDevices = append(targetDevices, dev)
+			if err != nil {
+				continue
 			}
+			// Enforce hardware-model compatibility if deployment specifies a target model
+			if targetHw != "all" && dev.HwModel != targetHw {
+				return c.Status(400).JSON(fiber.Map{
+					"error": fmt.Sprintf("device %s has incompatible hardware model %s for deployment target %s", dev.ID, dev.HwModel, targetHw),
+				})
+			}
+			targetDevices = append(targetDevices, dev)
 		}
 	} else {
 		allDevs, err := h.queries.ListDevices(ctx)
@@ -89,13 +103,16 @@ func (h *DeploymentHandler) CreateDeployment(c fiber.Ctx) error {
 		}
 		for _, dev := range allDevs {
 			if dev.Status == "online" {
-				targetDevices = append(targetDevices, dev)
+				// Filter to only compatible online devices
+				if targetHw == "all" || dev.HwModel == targetHw {
+					targetDevices = append(targetDevices, dev)
+				}
 			}
 		}
 	}
 
 	if len(targetDevices) == 0 {
-		return c.Status(400).JSON(fiber.Map{"error": "no eligible target devices found"})
+		return c.Status(400).JSON(fiber.Map{"error": "no eligible target devices found matching hardware model"})
 	}
 
 	initPercentage := int32(100)
@@ -131,6 +148,7 @@ func (h *DeploymentHandler) CreateDeployment(c fiber.Ctx) error {
 	cmd := map[string]string{
 		"action":          "update",
 		"version":         fw.Version,
+		"hw_model":        targetHw,
 		"download_url":    presignedURL.String(),
 		"sha256_checksum": fw.Sha256Checksum,
 		"signature":       fw.EcdsaSignature.String,

@@ -5,36 +5,36 @@
 // State diagram (thesis Chapter 3.3):
 //
 //	         ┌────────┐
-//	         │  IDLE  │◄──────────────────────────────┐
-//	         └───┬────┘                               │
-//	             │ command: update                     │
-//	             ▼                                     │
-//	      ┌─────────────┐                             │
-//	      │ DOWNLOADING │                             │
-//	      └──────┬──────┘                             │
-//	             │ download OK                         │ error / rollback cmd
-//	             ▼                                     │
-//	      ┌─────────────┐                             │
-//	      │  VERIFYING  │──── hash/sig mismatch ──────┤
-//	      └──────┬──────┘                             │
-//	             │ verified                            │
-//	             ▼                                     │
-//	      ┌─────────────┐                             │
-//	      │  INSTALLING │──── flash fault ────────────┤
-//	      └──────┬──────┘                             │
-//	             │ success                             │
-//	             ▼                                     │
-//	      ┌─────────────┐                             │
-//	      │   REBOOTING │                             │
-//	      └──────┬──────┘                             │
-//	             │ boot OK                             │
-//	             ▼                                     │
-//	         ┌────────┐                               │
-//	         │ ONLINE │───────── rollback cmd ─────────┘
-//	         └────────┘
+//	         │  IDLE  │────── boot_ok ──────────────┐
+//	         └───┬────┘                             │
+//	             │ cmd: update                      │
+//	             ▼                                  ▼
+//	      ┌─────────────┐                      ┌────────┐
+//	      │ DOWNLOADING │                      │ ONLINE │◄────┐
+//	      └──────┬──────┘                      └───┬────┘     │
+//	             │ download OK                     │          │
+//	             ▼                                 │ update   │ rollback_done
+//	      ┌─────────────┐                          │          │
+//	      │  VERIFYING  │──── hash/sig mismatch ───┤          │
+//	      └──────┬──────┘                          │          │
+//	             │ verified                        │          │
+//	             ▼                                 ▼          │
+//	      ┌─────────────┐                   ┌──────────────┐  │
+//	      │  INSTALLING │──── flash fault ──┤ ROLLING_BACK ├──┘
+//	      └──────┬──────┘                   └──────────────┘
+//	             │ success                         ▲
+//	             ▼                                 │ rollback cmd
+//	      ┌─────────────┐                          │
+//	      │   REBOOTING │                          │
+//	      └──────┬──────┘                          │
+//	             │ boot OK                         │
+//	             └─────────────────────────────────┘
 package agent
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // State represents the current lifecycle state of the robot OTA agent.
 type State string
@@ -54,6 +54,7 @@ const (
 type Event string
 
 const (
+	EventBootOK           Event = "boot_ok"
 	EventUpdateCommand    Event = "cmd_update"
 	EventDownloadOK       Event = "download_ok"
 	EventDownloadFail     Event = "download_fail"
@@ -64,16 +65,19 @@ const (
 	EventRebootOK         Event = "reboot_ok"
 	EventRollbackCommand  Event = "cmd_rollback"
 	EventRollbackComplete Event = "rollback_done"
+	EventReset            Event = "reset"
 )
 
-// transition defines valid state transitions in the OTA agent state machine.
+// transitions defines valid state transitions in the OTA agent state machine.
 var transitions = map[State]map[Event]State{
 	StateIdle: {
+		EventBootOK:        StateOnline,
 		EventUpdateCommand: StateDownloading,
 	},
 	StateDownloading: {
 		EventDownloadOK:   StateVerifying,
 		EventDownloadFail: StateError,
+		EventVerifyFail:   StateError,
 	},
 	StateVerifying: {
 		EventVerifyOK:   StateInstalling,
@@ -96,11 +100,14 @@ var transitions = map[State]map[Event]State{
 	},
 	StateError: {
 		EventRollbackCommand: StateRollingBack,
+		EventUpdateCommand:   StateDownloading,
+		EventReset:           StateOnline,
 	},
 }
 
-// StateMachine manages the current state of a robot OTA agent.
+// StateMachine manages the current state of a robot OTA agent with thread-safety.
 type StateMachine struct {
+	mu       sync.RWMutex
 	Current  State
 	DeviceID string
 	OnChange func(from, to State, event Event)
@@ -118,6 +125,9 @@ func NewStateMachine(deviceID string, onChange func(from, to State, event Event)
 // Trigger applies an event to the current state, performing the transition
 // if valid. Returns an error if the event is not allowed from the current state.
 func (sm *StateMachine) Trigger(event Event) error {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
 	nextMap, ok := transitions[sm.Current]
 	if !ok {
 		return fmt.Errorf("[state_machine] device=%s: no transitions defined for state %q", sm.DeviceID, sm.Current)
@@ -134,7 +144,16 @@ func (sm *StateMachine) Trigger(event Event) error {
 	return nil
 }
 
+// GetState returns the current state in a thread-safe manner.
+func (sm *StateMachine) GetState() State {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	return sm.Current
+}
+
 // Is returns true if the state machine is currently in the given state.
 func (sm *StateMachine) Is(s State) bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 	return sm.Current == s
 }

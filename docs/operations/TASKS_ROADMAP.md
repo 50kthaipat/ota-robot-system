@@ -61,7 +61,7 @@
 
 ### Week 4: Canary Rollout, Auto-Rollback & Code Signing
 - [x] **Canary Deployment Engine:**
-  - [x] แบ่งการ Deploy เป็น 3 ระยะ: Phase 1 (20%) -> Phase 2 (60%) -> Phase 3 (100%)
+  - [x] แบ่งการ Deploy เป็น 3 ระยะ: Phase 1 (20%) → Phase 2 (60%) → Phase 3 (100%)
   - [x] กำหนดช่วงเวลาสังเกตการณ์ในแต่ละ Phase (Wait Interval)
 - [x] **Automated Rollback Mechanism:**
   - [x] สร้าง Background Monitoring ตรวจสอบอัตราความล้มเหลว (Failure Rate)
@@ -100,10 +100,10 @@
 - [x] **k6 Performance & Load Test:**
   - [x] พัฒนา Script จำลองหุ่นยนต์ส่งสถานะและดาวน์โหลด Firmware พร้อมกัน (`scripts/k6/load_test_fleet.js`)
   - [x] บันทึกและวิเคราะห์ค่าความหน่วง (Latency p95, p99), Error Rate, และ Throughput ภายใต้สภาวะโหลดสูง
-- [x] **การทดสอบเชิงประจักษ์ 5 สถานการณ์ (Empirical Multi-Scenario Testing):**
-  - [x] ออกแบบระเบียบวิธีวิจัย 5 สถานการณ์เพื่อขจัดอคติของข้อมูล (`docs/EXPERIMENTAL_PLAN.md`)
+- [x] **การทดสอบจำลอง 5 สถานการณ์ (Simulation-Based Multi-Scenario Testing):**
+  - [x] ออกแบบระเบียบวิธีวิจัย 5 สถานการณ์เพื่อขจัดอคติของข้อมูล (`docs/academic/EXPERIMENTAL_PLAN.md`)
   - [x] พัฒนาสคริปต์รันการทดลองอัตโนมัติ (`scripts/run_experiments.ps1`) สำหรับการทดสอบซ้ำ
-  - [x] เก็บรวบรวมข้อมูลดิบระดับมิลลิวินาทีลงไฟล์ CSV ท้องถิ่น (`data/experiments/*.csv`) รวม 290 แถว
+  - [x] เก็บรวบรวมข้อมูลจำลองระดับมิลลิวินาทีลงไฟล์ CSV ท้องถิ่น (`data/experiments/*.csv`) รวม 290 แถว
   - [x] วัดผลครบทั้ง 5 มิติ: สภาวะปกติ, การสกัดกั้นภัยไซเบอร์, การฉีดข้อผิดพลาดและกู้คืนระบบ, สภาวะเครือข่ายหน่วง, และการป้องกันข้ามรุ่นฮาร์ดแวร์
 - [x] **การวิเคราะห์ข้อมูลทางสถิติและการประมวลผลข้อมูลเสริม (Auxiliary ML):**
   - [x] พัฒนาสคริปต์วิเคราะห์สถิติ (`scripts/statistical_analysis.py`) คำนวณค่าเฉลี่ย, ส่วนเบี่ยงเบนมาตรฐาน, ช่วงความเชื่อมั่น 95%, และ Mann-Whitney U Test

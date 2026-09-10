@@ -26,7 +26,7 @@
 เวลาที่ใช้: ประมาณ 10 นาที
 
 ### 1.1 สร้าง Project
-1. ไปที่ https://supabase.com -> เข้าสู่ระบบด้วย GitHub
+1. ไปที่ https://supabase.com → เข้าสู่ระบบด้วย GitHub
 2. กด New Project
 3. ตั้งชื่อ: `ota-robot-system`
 4. ตั้งรหัสผ่านฐานข้อมูล (Database Password)
@@ -34,8 +34,8 @@
 6. รอระบบจัดสรรทรัพยากรประมาณ 2 นาที
 
 ### 1.2 จัดเก็บ Connection String
-1. ไปที่ Project Settings -> Database
-2. เลื่อนลงไปที่ Connection string -> เลือกแท็บ URI
+1. ไปที่ Project Settings → Database
+2. เลื่อนลงไปที่ Connection string → เลือกแท็บ URI
 3. คัดลอกสตริงในรูปแบบ:
    ```
    postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
@@ -60,13 +60,13 @@ migrate -path backend/internal/db/migrations `
 เวลาที่ใช้: ประมาณ 10 นาที
 
 ### 2.1 สร้าง R2 Bucket
-1. ไปที่ https://cloudflare.com -> เข้าสู่ระบบ
-2. เมนูด้านซ้าย: R2 Object Storage -> Create bucket
+1. ไปที่ https://cloudflare.com → เข้าสู่ระบบ
+2. เมนูด้านซ้าย: R2 Object Storage → Create bucket
 3. ตั้งชื่อ Bucket: `firmware`
 4. Location: ค่าเริ่มต้น (Auto)
 
 ### 2.2 สร้าง API Token
-1. ไปที่ R2 -> Manage R2 API tokens
+1. ไปที่ R2 → Manage R2 API tokens
 2. เลือก Create API token
 3. ตั้งชื่อ: `ota-robot-api`
 4. สิทธิ์การใช้งาน (Permissions): Object Read & Write
@@ -89,7 +89,7 @@ migrate -path backend/internal/db/migrations `
 3. สร้าง Free Cluster และเลือก Region ที่ใกล้ที่สุด
 
 ### 3.2 สร้าง Credentials
-1. ไปที่ Access Management -> Credentials
+1. ไปที่ Access Management → Credentials
 2. กด Add new credentials
 3. กำหนด Username และ Password สำหรับ API Client
 4. บันทึกข้อมูลการเข้าสู่ระบบ
@@ -110,8 +110,8 @@ migrate -path backend/internal/db/migrations `
 ```
 
 ### 4.2 สร้าง Web Service บน Render
-1. ไปที่ https://render.com -> เข้าสู่ระบบด้วย GitHub
-2. เลือก New -> Web Service
+1. ไปที่ https://render.com → เข้าสู่ระบบด้วย GitHub
+2. เลือก New → Web Service
 3. เลือกเชื่อมต่อกับ Repository `ota-robot-system`
 4. ตั้งค่าบริการ:
    - **Name:** `ota-api`
@@ -168,8 +168,8 @@ ENV                   = production
 ```
 
 ### 5.2 ดำเนินการ Deploy บน Vercel
-1. ไปที่ https://vercel.com -> เข้าสู่ระบบด้วย GitHub
-2. เลือก Add New Project -> Import `ota-robot-system`
+1. ไปที่ https://vercel.com → เข้าสู่ระบบด้วย GitHub
+2. เลือก Add New Project → Import `ota-robot-system`
 3. ตั้งค่า Framework Preset: Next.js
 4. ตั้งค่า Root Directory: `frontend`
 5. กำหนด Environment Variables:
