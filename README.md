@@ -1,8 +1,6 @@
 # Cloud-Based OTA Firmware Management Platform for Robot Fleet
 
-
-
-An enterprise-grade, academic-validated **Over-The-Air (OTA) Firmware Management Platform** designed to securely orchestrate, deploy, monitor, and roll back firmware across distributed industrial robot fleets in multi-factory environments.
+An **Over-The-Air (OTA) Firmware Management Platform** designed to securely orchestrate, deploy, monitor, and roll back firmware across distributed industrial robot fleets in multi-factory environments.
 
 ---
 
@@ -69,7 +67,7 @@ graph TD
 2. **3-Phase Canary Rollout Engine:** Deploys firmware gradually across 3 risk-mitigated stages (**20% -> 60% -> 100%**) with automated health monitoring at each phase.
 3. **Automated Rollback Mechanism:** Background watchdogs continuously evaluate robot telemetry heartbeats. If a node reports failures or fails post-update healthchecks, the system automatically triggers a rollback command, reverting the robot to its golden image.
 4. **Full-Stack Observability:** 4 automated Grafana dashboards track fleet status, rollout gauges, API latencies (p50/p95/p99), and factory compliance.
-5. **Automated CI/CD Pipeline:** Fully validated on GitHub Actions with unit tests, Next.js production builds, and multi-container Docker image verification.
+5. **Automated CI/CD Pipeline:** Configured on GitHub Actions with unit tests, Next.js production builds, and multi-container Docker image verification.
 
 ---
 
@@ -97,16 +95,16 @@ docker compose up -d --build
 
 ---
 
-## 4. Empirical Evaluation & Research Methodology
+## 4. Multi-Scenario Evaluation Framework
 
-The platform is evaluated across 5 operational scenarios ($N=290$ trials) to eliminate evaluation bias:
-1. **Nominal Baseline:** Happy path verification and latency profiling ($N=30$).
-2. **Security & Code Signing:** Rejection of unsigned, tampered, and forged binaries ($N=30$).
-3. **Fault Injection & Auto-Rollback:** A/B benchmarking between Direct and Canary Rollout ($N=10$).
-4. **Adverse Network Conditions:** Performance under 150–500ms latency and 0–10% packet loss ($N=90$).
-5. **Cross-Hardware Compatibility:** Heterogeneous model compatibility enforcement ($N=130$).
+The platform architecture is evaluated across 5 distinct operational scenarios to assess system behavior under varied industrial conditions:
+1. **Nominal Baseline Scenario:** Measures end-to-end delivery, verification, and installation workflows under normal operating conditions.
+2. **Security & Code Signing Verification:** Evaluates rejection capabilities against unsigned payloads, bit-flip tampered binaries, and forged cryptographic keys.
+3. **Fault Injection & Automated Rollback:** Comparative A/B evaluation between Direct and Canary Rollout strategies during firmware boot failures.
+4. **Adverse Network Conditions:** Observes telemetry delivery and binary download resilience under simulated network latency and packet loss.
+5. **Cross-Hardware Compatibility:** Verifies model enforcement mechanisms when deploying firmware across heterogeneous robot classes.
 
-See full methodology in [`docs/academic/EXPERIMENTAL_PLAN.md`](docs/academic/EXPERIMENTAL_PLAN.md).
+Detailed experimental design and variable matrices are documented in [`docs/academic/EXPERIMENTAL_PLAN.md`](docs/academic/EXPERIMENTAL_PLAN.md).
 
 ---
 

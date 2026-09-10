@@ -1,4 +1,4 @@
-# 💻 OTA Fleet Web Dashboard
+# OTA Fleet Web Dashboard
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)](https://reactjs.org)
@@ -6,11 +6,11 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
 [![Theme](https://img.shields.io/badge/Theme-Cyber%20Dark-8B5CF6)](#uiux-design-system)
 
-The **OTA Fleet Web Dashboard** is an industrial-grade, mission-control web application designed for robotics operators, automation engineers, and factory supervisors. Built with **Next.js 14 (App Router)** and styled with a futuristic **Cyber-Dark** industrial design system, it provides real-time fleet health tracking, firmware management, and canary deployment controls.
+The **OTA Fleet Web Dashboard** is an industrial-grade web application designed for robotics operators, automation engineers, and factory supervisors. Built with **Next.js 14 (App Router)** and styled with an industrial **Cyber-Dark** design system, it provides real-time fleet health tracking, firmware management, and canary deployment controls.
 
 ---
 
-## 🏗️ Architecture & Directory Layout
+## 1. Architecture & Directory Layout
 
 ```
 frontend/
@@ -31,15 +31,15 @@ frontend/
     │   ├── deployments/        # Deployment History & Live Monitor
     │   │   ├── page.tsx        # Active deployments list & status indicators
     │   │   └── [id]/           # Canary Deployment Inspector
-    │   │       └── page.tsx    # Live canary phase tracker (10% -> 50% -> 100%) & Emergency Rollback
+    │   │       └── page.tsx    # Live canary phase tracker (20% -> 60% -> 100%) & Emergency Rollback
     │   └── firmware/           # Firmware Repository & Vault
     │       └── page.tsx        # Firmware upload form, ECDSA signature display & version catalog
     ├── components/             # Reusable UI component library
     │   ├── Navbar.tsx          # Top navigation bar with active links & system clock
-    │   ├── StatCard.tsx        # Glowing metric summary card
+    │   ├── StatCard.tsx        # Metric summary card
     │   ├── DeviceCard.tsx      # Interactive robot status card with factory badge
-    │   ├── ProgressBar.tsx     # Animated gradient deployment progress bar
-    │   └── StatusBadge.tsx     # Cyber status badges (online, offline, updating, rolled_back)
+    │   ├── ProgressBar.tsx     # Animated deployment progress bar
+    │   └── StatusBadge.tsx     # Status badges (online, offline, updating, rolled_back)
     └── lib/                    # Shared utilities & API client
         ├── api.ts              # Fetch client communicating with Go Backend API
         └── types.ts            # TypeScript interfaces for Robot, Firmware, Deployment
@@ -47,7 +47,7 @@ frontend/
 
 ---
 
-## 🎨 UI/UX Design System
+## 2. UI/UX Design System
 
 The dashboard utilizes an **Industrial Cyber-Dark** design language:
 - **Backgrounds:** Ultra-dark slate (`#0B0F17`, `#111827`)
@@ -57,24 +57,24 @@ The dashboard utilizes an **Industrial Cyber-Dark** design language:
 
 ---
 
-## 🚀 Running Locally (Standalone)
+## 3. Running Locally (Standalone)
 
 ### Prerequisites
 - Node.js 20+ installed
 - Backend API running on `http://localhost:8000`
 
-### 1. Install Dependencies
+### Step 1: Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Development Mode
+### Step 2: Development Mode
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. Production Build & Test
+### Step 3: Production Build & Test
 ```bash
 npm run build
 npm run start
@@ -82,7 +82,7 @@ npm run start
 
 ---
 
-## 📡 API Integration & Reverse Proxy
+## 4. API Integration & Reverse Proxy
 
 In production and local environments, Next.js acts as a reverse proxy via [`next.config.mjs`](./next.config.mjs):
 - Calls to `/api/v1/*` are automatically proxied to `${API_INTERNAL_URL}/api/v1/*`

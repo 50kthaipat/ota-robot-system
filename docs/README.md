@@ -39,7 +39,7 @@ docs/
 |---|---|---|
 | **Project Proposal (MD)** | [`academic/PROJECT_PROPOSAL.md`](./academic/PROJECT_PROPOSAL.md) | แบบเสนอโครงงานวิศวกรรม ฉบับภาษาอังกฤษ พร้อมระบุวัตถุประสงค์ ขอบเขต และเทคโนโลยีหลัก |
 | **Project Proposal (DOCX)**| [`academic/PROJECT_PROPOSAL.docx`](./academic/PROJECT_PROPOSAL.docx) | แบบฟอร์มเสนอโครงงานในรูปแบบ Microsoft Word สำหรับส่งอาจารย์ที่ปรึกษา |
-| **Experimental Plan** | [`academic/EXPERIMENTAL_PLAN.md`](./academic/EXPERIMENTAL_PLAN.md) | กรอบการทดลอง 5 สถานการณ์ (N=290), การวัดเวลาในโค้ด, การวิเคราะห์สถิติ, และ Auxiliary ML |
+| **Experimental Plan** | [`academic/EXPERIMENTAL_PLAN.md`](./academic/EXPERIMENTAL_PLAN.md) | กรอบการทดลอง 5 สถานการณ์, การวัดเวลาในโค้ด, การวิเคราะห์สถิติ, และ Auxiliary ML |
 
 ### หมวดที่ 2: การออกแบบและสถาปัตยกรรม (System Design & Specs)
 | เอกสาร | Path | วัตถุประสงค์และบทบาทในโครงงาน |

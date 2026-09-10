@@ -1,4 +1,4 @@
-# ⚙️ OTA Backend API Service
+# OTA Backend API Service
 
 [![Go Version](https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=flat&logo=go)](https://golang.org)
 [![Framework](https://img.shields.io/badge/Framework-Fiber%20v3-00ACD7?style=flat)](https://gofiber.io)
@@ -9,7 +9,7 @@ The **OTA Backend API Service** is the central control plane of the Cloud-Based 
 
 ---
 
-## 🏗️ Architecture & Directory Layout
+## 1. Architecture & Directory Layout
 
 The service adheres to Clean Architecture principles, isolating business logic from external protocols and infrastructure:
 
@@ -39,7 +39,7 @@ backend/
     │   ├── handlers.go         # Topic listeners (telemetry, heartbeat, progress)
     │   └── publisher.go        # Command dispatching (update, rollback)
     ├── orchestrator/           # Canary Rollout & Auto-Rollback Engine
-    │   ├── canary.go           # 3-phase rollout scheduler (10% -> 50% -> 100%)
+    │   ├── canary.go           # 3-phase rollout scheduler (20% -> 60% -> 100%)
     │   └── watchdog.go         # Fleet heartbeat monitor & automatic rollback trigger
     └── storage/                # S3 / MinIO binary object storage integration
         └── s3.go               # Firmware blob upload & presigned download URLs
@@ -47,17 +47,16 @@ backend/
 
 ---
 
-## 🚀 Running Locally (Standalone)
+## 2. Running Locally (Standalone)
 
 ### Prerequisites
 - Go 1.22+ installed
-- Running PostgreSQL, Redis, MinIO, and EMQX (e.g. via `docker compose up -d postgres redis minio emqx`)
+- Running PostgreSQL, MinIO, and EMQX (e.g. via `docker compose up -d postgres minio emqx`)
 
-### 1. Configure Environment
+### Step 1: Configure Environment
 Create `.env` or set environment variables:
 ```bash
 DATABASE_URL=postgres://ota:ota_password@localhost:5432/otadb?sslmode=disable
-REDIS_URL=redis://localhost:6379
 MINIO_ENDPOINT=localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
@@ -69,7 +68,7 @@ ECDSA_PRIVATE_KEY_PATH=../keys/private.pem
 ECDSA_PUBLIC_KEY_PATH=../keys/public.pem
 ```
 
-### 2. Run the Service
+### Step 2: Run the Service
 ```bash
 go run main.go
 ```
@@ -77,7 +76,7 @@ The API server will listen on `http://localhost:8000`.
 
 ---
 
-## 🧪 Unit & Integration Testing
+## 3. Unit & Integration Testing
 
 Run unit tests with race detection and statement coverage:
 
@@ -91,7 +90,7 @@ go test -v ./...
 
 ---
 
-## REST API & MQTT Interfaces
+## 4. REST API & MQTT Interfaces
 
 Detailed endpoint documentation, request/response bodies, and MQTT topic specifications are documented in:
 [`docs/design/API_AND_MQTT_SPEC.md`](../docs/design/API_AND_MQTT_SPEC.md)

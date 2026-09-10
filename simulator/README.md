@@ -1,4 +1,4 @@
-# 🤖 OTA Robot Edge Simulator
+# OTA Robot Edge Simulator
 
 [![Go Version](https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=flat&logo=go)](https://golang.org)
 [![MQTT Protocol](https://img.shields.io/badge/MQTT-5.0-red?style=flat)](https://mqtt.org)
@@ -8,7 +8,7 @@ The **OTA Robot Edge Simulator** simulates industrial robot edge nodes (such as 
 
 ---
 
-## 🏗️ Architecture & State Machine
+## 1. Architecture & State Machine
 
 Each robot node executes a finite state machine mimicking actual embedded Linux / RTOS robot controllers with Dual-Slot (Slot A / Slot B) architecture:
 
@@ -17,17 +17,17 @@ stateDiagram-v2
     [*] --> IDLE : Power On & Connect MQTT
     IDLE --> DOWNLOADING : Receive OTA Update Command
     DOWNLOADING --> VERIFYING : Download Complete
-    VERIFYING --> APPLYING : ECDSA Signature & SHA-256 Valid ✅
-    VERIFYING --> ROLLBACK : Tampered / Invalid Signature ❌
+    VERIFYING --> APPLYING : ECDSA Signature & SHA-256 Valid
+    VERIFYING --> ROLLBACK : Tampered / Invalid Signature
     APPLYING --> REBOOTING : Flash Secondary Slot
-    REBOOTING --> IDLE : Self-Test / Heartbeat OK ✅
-    REBOOTING --> ROLLBACK : Healthcheck Timeout (>5s) ❌
+    REBOOTING --> IDLE : Self-Test / Heartbeat OK
+    REBOOTING --> ROLLBACK : Healthcheck Timeout (>5s)
     ROLLBACK --> IDLE : Revert to Golden Image (Slot A)
 ```
 
 ---
 
-## 🛡️ Security Verification (ECDSA P-256)
+## 2. Security Verification (ECDSA P-256)
 
 When the simulator receives an update command from `ota/device/{device_id}/command`, it performs strict two-layer validation before applying:
 1. **SHA-256 Integrity Check:** Calculates the hash of the downloaded firmware payload and verifies against `sha256_checksum`.
@@ -36,7 +36,7 @@ When the simulator receives an update command from `ota/device/{device_id}/comma
 
 ---
 
-## 🚀 Running the Simulator
+## 3. Running the Simulator
 
 ### Environment Variables
 | Variable | Description | Example |
