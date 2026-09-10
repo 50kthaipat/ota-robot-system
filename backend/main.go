@@ -134,6 +134,14 @@ func main() {
 	firmwareHandler := handlers.NewFirmwareHandler(dbPool, minioClient, bucket)
 	deploymentHandler := handlers.NewDeploymentHandler(dbPool, minioClient, bucket, myMqttClient)
 
+	app.Get("/", func(c fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":  "ok",
+			"service": "ota-robot-system-api",
+			"health":  "/health",
+			"docs":    "/api/v1/devices",
+		})
+	})
 	app.Get("/health", func(c fiber.Ctx) error { return c.SendString("OK") })
 
 	api := app.Group("/api/v1")
