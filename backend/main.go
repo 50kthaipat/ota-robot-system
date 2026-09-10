@@ -67,21 +67,24 @@ func main() {
 		minioEndpoint = strings.TrimPrefix(minioEndpoint, "http://")
 		minioEndpoint = strings.TrimRight(minioEndpoint, "/")
 	}
+	accessKey := strings.TrimSpace(os.Getenv("MINIO_ACCESS_KEY"))
+	secretKey := strings.TrimSpace(os.Getenv("MINIO_SECRET_KEY"))
+	region := strings.TrimSpace(os.Getenv("MINIO_REGION"))
+	if region == "" {
+		region = "auto"
+	}
 	minioClient, err := minio.New(minioEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(os.Getenv("MINIO_ACCESS_KEY"), os.Getenv("MINIO_SECRET_KEY"), ""),
+		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: os.Getenv("MINIO_USE_SSL") == "true",
+		Region: region,
 	})
 	if err != nil {
 		log.Fatalf("Unable to connect to minio/R2: %v\n", err)
 	}
-	log.Printf("[INFO] MinIO/R2 client initialized with endpoint %s", minioEndpoint)
+	log.Printf("[INFO] MinIO/R2 client initialized with endpoint %s (region: %s)", minioEndpoint, region)
 	bucket := os.Getenv("MINIO_BUCKET")
 	if bucket == "" {
 		bucket = "firmware"
-	}
-	exists, err := minioClient.BucketExists(context.Background(), bucket)
-	if err == nil && !exists {
-		minioClient.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{})
 	}
 
 	// ── MQTT Client ─────────────────────────────────────────────────────────────
