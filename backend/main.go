@@ -35,9 +35,10 @@ func main() {
 	}
 	dbPool, err := pgxpool.New(context.Background(), dbUrl)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		log.Fatalf("Unable to configure database pool: %v\n", err)
 	}
 	defer dbPool.Close()
+	log.Println("[INFO] Database pool configured")
 
 	// Redis — optional, skip gracefully when not available (cloud free tier)
 	redisUrl := os.Getenv("REDIS_URL")
@@ -73,6 +74,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to connect to minio/R2: %v\n", err)
 	}
+	log.Printf("[INFO] MinIO/R2 client initialized with endpoint %s", minioEndpoint)
 	bucket := os.Getenv("MINIO_BUCKET")
 	if bucket == "" {
 		bucket = "firmware"
@@ -112,9 +114,10 @@ func main() {
 
 	mqttClient := mqtt.NewClient(mqttOpts)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatalf("MQTT Connect error: %v", token.Error())
+		log.Printf("[WARN] MQTT initial connect failed: %v — background auto-reconnect active", token.Error())
+	} else {
+		log.Printf("[INFO] MQTT connected successfully to %s", mqttBroker)
 	}
-	log.Printf("[INFO] MQTT connected to %s", mqttBroker)
 
 	myMqttClient := mymqtt.NewClient(mqttClient, dbPool)
 	myMqttClient.Subscribe()
@@ -146,9 +149,13 @@ func main() {
 
 	app.Get("/metrics", metrics.Handler())
 
-	port := os.Getenv("API_PORT")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = os.Getenv("API_PORT")
+	}
 	if port == "" {
 		port = "8000"
 	}
+	log.Printf("[INFO] Server starting on port %s", port)
 	log.Fatal(app.Listen(":" + port))
 }
