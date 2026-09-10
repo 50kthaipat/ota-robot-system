@@ -1,6 +1,13 @@
 import { Device, FirmwareVersion, Deployment, DeploymentDevice, CreateDeploymentPayload } from "./types";
 
-const BASE_URL = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000");
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  }
+  return typeof window !== "undefined" ? "" : (process.env.API_INTERNAL_URL || "http://127.0.0.1:8000");
+};
+
+const BASE_URL = getBaseUrl();
 
 async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {

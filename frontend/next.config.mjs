@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const apiHost = process.env.API_INTERNAL_URL || "http://localhost:8000";
+const apiHost = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const nextConfig = {
   reactStrictMode: true,
