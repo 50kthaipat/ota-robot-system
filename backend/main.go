@@ -169,6 +169,7 @@ func main() {
 	api.Get("/firmware/:id/url", firmwareHandler.GetDownloadURL)
 	api.Patch("/firmware/:id", firmwareHandler.Update)
 	api.Delete("/firmware/:id", firmwareHandler.Delete)
+	api.Post("/firmware/resign", firmwareHandler.ResignAll)
 	api.Post("/deployments", deploymentHandler.CreateDeployment)
 	api.Get("/deployments", deploymentHandler.ListDeployments)
 	api.Get("/deployments/:id", deploymentHandler.GetDeployment)

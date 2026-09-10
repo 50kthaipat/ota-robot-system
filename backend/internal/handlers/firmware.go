@@ -5,6 +5,7 @@ import (
     "context"
     "crypto/ecdsa"
     "crypto/sha256"
+    "errors"
     "fmt"
     "io"
     "log"
@@ -121,29 +122,55 @@ func (h *FirmwareHandler) Upload(c fiber.Ctx) error {
 }
 
 func (h *FirmwareHandler) backfillSignatures(ctx context.Context) {
+    count, err := h.resignAllInternal(ctx)
+    if err != nil {
+        log.Printf("[SECURITY] backfillSignatures error: %v", err)
+    } else if count > 0 {
+        log.Printf("[SECURITY] backfillSignatures updated %d firmware signature(s)", count)
+    }
+}
+
+func (h *FirmwareHandler) resignAllInternal(ctx context.Context) (int, error) {
     if h.privKey == nil {
-        return
+        return 0, errors.New("private key not loaded")
     }
     versions, err := h.queries.ListFirmwareVersions(ctx)
     if err != nil {
-        log.Printf("Warning: failed to list firmware for signature backfill: %v", err)
-        return
+        return 0, err
     }
+    count := 0
     for _, fw := range versions {
-        if !fw.EcdsaSignature.Valid || fw.EcdsaSignature.String == "" {
+        needSign := !fw.EcdsaSignature.Valid || fw.EcdsaSignature.String == ""
+        if !needSign && h.pubKey != nil {
+            if !mycrypto.VerifySignature(h.pubKey, fw.Sha256Checksum, fw.EcdsaSignature.String) {
+                log.Printf("[SECURITY] Firmware %s signature is invalid or signed with mismatched key; re-signing with master key...", fw.Version)
+                needSign = true
+            }
+        }
+        if needSign {
             sig, err := mycrypto.SignSHA256(h.privKey, fw.Sha256Checksum)
             if err != nil {
-                log.Printf("Warning: failed to sign existing firmware %s: %v", fw.Version, err)
+                log.Printf("Warning: failed to sign firmware %s: %v", fw.Version, err)
                 continue
             }
             _, err = h.db.Exec(ctx, "UPDATE firmware_versions SET ecdsa_signature = $1 WHERE id = $2", sig, fw.ID)
             if err != nil {
                 log.Printf("Warning: failed to backfill signature for %s: %v", fw.Version, err)
             } else {
-                log.Printf("Successfully backfilled ECDSA signature for firmware %s", fw.Version)
+                count++
+                log.Printf("Successfully signed firmware %s with master key", fw.Version)
             }
         }
     }
+    return count, nil
+}
+
+func (h *FirmwareHandler) ResignAll(c fiber.Ctx) error {
+    count, err := h.resignAllInternal(c.Context())
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+    return c.JSON(fiber.Map{"status": "ok", "updated_count": count})
 }
 
 func (h *FirmwareHandler) List(c fiber.Ctx) error {

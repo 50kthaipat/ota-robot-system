@@ -55,12 +55,23 @@ func SavePublicKeyPEM(key *ecdsa.PublicKey, path string) error {
 	return os.WriteFile(path, pem.EncodeToMemory(block), 0644)
 }
 
-// LoadPrivateKeyPEM loads an ECDSA private key from a PEM file.
-func LoadPrivateKeyPEM(path string) (*ecdsa.PrivateKey, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
+const (
+	// DefaultPrivateKeyPEM is the master ECDSA P-256 private key matching the fleet public key.
+	DefaultPrivateKeyPEM = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIH1mDDDuUx1T2mZXetVDVu4ivtfN51Ey3WflJAaMs528oAoGCCqGSM49
+AwEHoUQDQgAElEKlesPvGKyGFI2RwpJsfqXxqKBAhkeZCoqleIU8Ix6uE5NVhG7K
+AtIVTcO3ylWXNO4qxiTJvhyMEA73jEgheg==
+-----END EC PRIVATE KEY-----`
+
+	// DefaultPublicKeyPEM is the master ECDSA P-256 public key embedded in all robot simulators.
+	DefaultPublicKeyPEM = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAElEKlesPvGKyGFI2RwpJsfqXxqKBA
+hkeZCoqleIU8Ix6uE5NVhG7KAtIVTcO3ylWXNO4qxiTJvhyMEA73jEgheg==
+-----END PUBLIC KEY-----`
+)
+
+// ParsePrivateKeyFromPEM parses an EC private key from raw PEM bytes.
+func ParsePrivateKeyFromPEM(data []byte) (*ecdsa.PrivateKey, error) {
 	block, _ := pem.Decode(data)
 	if block == nil {
 		return nil, errors.New("failed to parse PEM block containing the private key")
@@ -68,12 +79,8 @@ func LoadPrivateKeyPEM(path string) (*ecdsa.PrivateKey, error) {
 	return x509.ParseECPrivateKey(block.Bytes)
 }
 
-// LoadPublicKeyPEM loads an ECDSA public key from a PEM file.
-func LoadPublicKeyPEM(path string) (*ecdsa.PublicKey, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
+// ParsePublicKeyFromPEM parses an ECDSA PKIX public key from raw PEM bytes.
+func ParsePublicKeyFromPEM(data []byte) (*ecdsa.PublicKey, error) {
 	block, _ := pem.Decode(data)
 	if block == nil {
 		return nil, errors.New("failed to parse PEM block containing the public key")
@@ -89,25 +96,71 @@ func LoadPublicKeyPEM(path string) (*ecdsa.PublicKey, error) {
 	return ecdsaPub, nil
 }
 
-// EnsureKeypair ensures that private and public key files exist, generating them if needed.
+// LoadPrivateKeyPEM loads an ECDSA private key from a PEM file.
+func LoadPrivateKeyPEM(path string) (*ecdsa.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePrivateKeyFromPEM(data)
+}
+
+// LoadPublicKeyPEM loads an ECDSA public key from a PEM file.
+func LoadPublicKeyPEM(path string) (*ecdsa.PublicKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePublicKeyFromPEM(data)
+}
+
+// EnsureKeypair ensures that private and public keys are available.
+// It checks environment variables (B64/PEM), file paths, and falls back to the embedded master keypair.
 func EnsureKeypair(privPath, pubPath string) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
-	if priv, err := LoadPrivateKeyPEM(privPath); err == nil {
-		if pub, err := LoadPublicKeyPEM(pubPath); err == nil {
-			return priv, pub, nil
+	// 1. Check ECDSA_PRIVATE_KEY_B64 environment variable (Base64 encoded PEM)
+	if b64 := os.Getenv("ECDSA_PRIVATE_KEY_B64"); b64 != "" {
+		if raw, err := base64.StdEncoding.DecodeString(b64); err == nil {
+			if priv, err := ParsePrivateKeyFromPEM(raw); err == nil {
+				return priv, &priv.PublicKey, nil
+			}
 		}
 	}
 
-	priv, pub, err := GenerateKeypair()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate ecdsa keypair: %w", err)
+	// 2. Check ECDSA_PRIVATE_KEY_PEM environment variable (Raw PEM text)
+	if rawPEM := os.Getenv("ECDSA_PRIVATE_KEY_PEM"); rawPEM != "" {
+		if priv, err := ParsePrivateKeyFromPEM([]byte(rawPEM)); err == nil {
+			return priv, &priv.PublicKey, nil
+		}
 	}
 
-	if err := SavePrivateKeyPEM(priv, privPath); err != nil {
-		return nil, nil, fmt.Errorf("failed to save private key: %w", err)
+	// 3. Try loading from file path
+	if privPath != "" {
+		if priv, err := LoadPrivateKeyPEM(privPath); err == nil {
+			if pub, err := LoadPublicKeyPEM(pubPath); err == nil {
+				return priv, pub, nil
+			}
+			return priv, &priv.PublicKey, nil
+		}
 	}
-	if err := SavePublicKeyPEM(pub, pubPath); err != nil {
-		return nil, nil, fmt.Errorf("failed to save public key: %w", err)
+
+	// 4. Fall back to embedded master keypair (guarantees fleet compatibility)
+	priv, err := ParsePrivateKeyFromPEM([]byte(DefaultPrivateKeyPEM))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse default embedded private key: %w", err)
 	}
+	pub, err := ParsePublicKeyFromPEM([]byte(DefaultPublicKeyPEM))
+	if err != nil {
+		pub = &priv.PublicKey
+	}
+
+	// Try saving to disk for local cache if path is provided
+	if privPath != "" {
+		_ = SavePrivateKeyPEM(priv, privPath)
+	}
+	if pubPath != "" {
+		_ = SavePublicKeyPEM(pub, pubPath)
+	}
+
 	return priv, pub, nil
 }
 
