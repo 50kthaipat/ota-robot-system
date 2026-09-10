@@ -1,4 +1,4 @@
-﻿# docker-compose.cloud-fleet.yml
+# docker-compose.cloud-fleet.yml
 # Runs an industrial multi-factory fleet of 5 robot controllers in isolated Docker containers,
 # communicating with the production HiveMQ Cloud broker.
 
@@ -6,6 +6,8 @@ services:
   robot-scara:
     build:
       context: ./simulator
+    volumes:
+      - ./keys:/app/keys:ro
     environment:
       - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
       - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
@@ -19,6 +21,8 @@ services:
   robot-delta:
     build:
       context: ./simulator
+    volumes:
+      - ./keys:/app/keys:ro
     environment:
       - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
       - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
@@ -32,6 +36,8 @@ services:
   robot-articulated:
     build:
       context: ./simulator
+    volumes:
+      - ./keys:/app/keys:ro
     environment:
       - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
       - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
@@ -45,6 +51,8 @@ services:
   robot-cartesian:
     build:
       context: ./simulator
+    volumes:
+      - ./keys:/app/keys:ro
     environment:
       - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
       - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
@@ -58,6 +66,8 @@ services:
   robot-agv:
     build:
       context: ./simulator
+    volumes:
+      - ./keys:/app/keys:ro
     environment:
       - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
       - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}

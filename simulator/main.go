@@ -135,6 +135,18 @@ func main() {
 		log.Printf("Robot %s: MQTT authenticating as user: %s", deviceID, mqttUser)
 	}
 
+	// Last Will and Testament (LWT) for automatic offline status on broker disconnect
+	willPayload, _ := json.Marshal(StatusUpdate{
+		DeviceID:  deviceID,
+		FactoryID: factoryID,
+		HwModel:   hwModel,
+		Version:   currentVersion,
+		Status:    "offline",
+		FsmState:  "offline",
+		Timestamp: time.Now().Format(time.RFC3339),
+	})
+	opts.SetWill(fmt.Sprintf("ota/device/%s/status", deviceID), string(willPayload), 1, false)
+
 	var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 		var cmd Command
@@ -185,7 +197,20 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 
-	log.Println("Shutting down...")
+	log.Println("Shutting down... publishing offline status to MQTT broker")
+	offlineUpdate := StatusUpdate{
+		DeviceID:  deviceID,
+		FactoryID: factoryID,
+		HwModel:   hwModel,
+		Version:   currentVersion,
+		Status:    "offline",
+		FsmState:  "offline",
+		Timestamp: time.Now().Format(time.RFC3339),
+	}
+	offlinePayload, _ := json.Marshal(offlineUpdate)
+	token := client.Publish(fmt.Sprintf("ota/device/%s/status", deviceID), 1, false, offlinePayload)
+	token.WaitTimeout(2 * time.Second)
+
 	client.Disconnect(250)
 }
 
