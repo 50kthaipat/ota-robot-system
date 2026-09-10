@@ -116,6 +116,17 @@ func (o *CanaryOrchestrator) Run(depID pgtype.UUID, devices []db.Device, cmd map
 		}
 	}
 
+	// Always ensure Phase 3 (100% Full Fleet) is persisted once all phases are dispatched
+	ctx := context.Background()
+	cur, err := o.queries.GetDeployment(ctx, depID)
+	if err == nil && cur.Status != "rolled_back" && cur.Status != "failed" {
+		_, _ = o.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
+			ID:               depID,
+			CurrentPhase:     3,
+			CanaryPercentage: 100,
+		})
+	}
+
 	log.Printf("[canary] deployment %v rollout complete", depID)
 }
 

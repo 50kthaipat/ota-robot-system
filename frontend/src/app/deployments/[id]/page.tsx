@@ -170,14 +170,16 @@ export default function DeploymentDetailPage() {
               </span>
             </div>
             <span className="text-xs font-mono text-primary font-medium px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
-              Active Phase: {deployment.current_phase || 1} ({deployment.canary_percentage || 20}% Fleet)
+              {deployment.status === "completed"
+                ? "Completed: Phase 3 (100% Fleet)"
+                : `Active Phase: ${deployment.current_phase || 1} (${deployment.canary_percentage || 20}% Fleet)`}
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-1">
             <div
               className={`p-3 rounded-lg border transition ${
-                (deployment.current_phase || 1) >= 1
+                deployment.status === "completed" || (deployment.current_phase || 1) >= 1
                   ? "bg-primary/10 border-primary/30 text-ink"
                   : "bg-surface-2/40 border-hairline text-ink-subtle"
               }`}
@@ -191,7 +193,7 @@ export default function DeploymentDetailPage() {
 
             <div
               className={`p-3 rounded-lg border transition ${
-                (deployment.current_phase || 1) >= 2
+                deployment.status === "completed" || (deployment.current_phase || 1) >= 2
                   ? "bg-primary/10 border-primary/30 text-ink"
                   : "bg-surface-2/40 border-hairline text-ink-subtle"
               }`}
@@ -205,7 +207,7 @@ export default function DeploymentDetailPage() {
 
             <div
               className={`p-3 rounded-lg border transition ${
-                (deployment.current_phase || 1) >= 3
+                deployment.status === "completed" || (deployment.current_phase || 1) >= 3
                   ? "bg-primary/10 border-primary/30 text-ink"
                   : "bg-surface-2/40 border-hairline text-ink-subtle"
               }`}

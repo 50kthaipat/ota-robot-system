@@ -194,6 +194,26 @@ func (h *DeploymentHandler) GetDeployment(c fiber.Ctx) error {
 		targetVersion = fw.Version
 	}
 
+	// Self-healing reconciliation: if all target devices succeeded/failed, ensure marked completed
+	if dep.TotalDevices > 0 && (dep.SuccessCount+dep.FailureCount >= dep.TotalDevices) && dep.Status != "rolled_back" && dep.Status != "failed" {
+		if dep.Status != "completed" {
+			_, _ = h.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
+				ID:     dep.ID,
+				Status: "completed",
+			})
+			dep.Status = "completed"
+		}
+		if dep.Strategy == "canary" && dep.CurrentPhase < 3 {
+			_, _ = h.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
+				ID:               dep.ID,
+				CurrentPhase:     3,
+				CanaryPercentage: 100,
+			})
+			dep.CurrentPhase = 3
+			dep.CanaryPercentage = 100
+		}
+	}
+
 	return c.JSON(fiber.Map{
 		"deployment":     dep,
 		"devices":        devs,
@@ -215,6 +235,26 @@ func (h *DeploymentHandler) ListDeployments(c fiber.Ctx) error {
 
 	result := make([]DeploymentWithFW, 0, len(deps))
 	for _, d := range deps {
+		// Self-healing reconciliation for list view
+		if d.TotalDevices > 0 && (d.SuccessCount+d.FailureCount >= d.TotalDevices) && d.Status != "rolled_back" && d.Status != "failed" {
+			if d.Status != "completed" {
+				_, _ = h.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
+					ID:     d.ID,
+					Status: "completed",
+				})
+				d.Status = "completed"
+			}
+			if d.Strategy == "canary" && d.CurrentPhase < 3 {
+				_, _ = h.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
+					ID:               d.ID,
+					CurrentPhase:     3,
+					CanaryPercentage: 100,
+				})
+				d.CurrentPhase = 3
+				d.CanaryPercentage = 100
+			}
+		}
+
 		fwVer := ""
 		fw, err := h.queries.GetFirmwareVersion(ctx, d.FirmwareVersionID)
 		if err == nil {

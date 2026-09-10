@@ -112,6 +112,13 @@ func (c *Client) handleProgress(client mqtt.Client, msg mqtt.Message) {
 					ID:     activeDD.DeploymentID,
 					Status: "completed",
 				})
+				if dep.Strategy == "canary" {
+					_, _ = c.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
+						ID:               activeDD.DeploymentID,
+						CurrentPhase:     3,
+						CanaryPercentage: 100,
+					})
+				}
 			}
 		}
 	}
