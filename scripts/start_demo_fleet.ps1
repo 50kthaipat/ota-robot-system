@@ -14,13 +14,17 @@ if (-not $Password) {
     $Password = Read-Host "Enter HiveMQ Password"
 }
 
+$Broker = $Broker.Trim()
+$Username = $Username.Trim()
+$Password = $Password.Trim()
+
 $Devices = @(
     @{ Id = "robot-agv-001"; Model = "agv-v1"; Factory = "factory-bkk-01" },
     @{ Id = "robot-agv-002"; Model = "agv-v1"; Factory = "factory-bkk-01" },
     @{ Id = "robot-arm-003"; Model = "arm-v2"; Factory = "factory-rayong-02" }
 )
 
-$SimDir = Join-Path $PSScriptRoot "..\simulator"
+$SimDir = (Resolve-Path (Join-Path $PSScriptRoot "..\simulator")).Path
 
 foreach ($dev in $Devices) {
     $id = $dev.Id
@@ -42,4 +46,4 @@ foreach ($dev in $Devices) {
     Start-Sleep -Milliseconds 500
 }
 
-Write-Host "All 3 robot agents started. Check Vercel Dashboard!" -ForegroundColor Green
+Write-Host "All 3 robot agents launched. Check Vercel Dashboard!" -ForegroundColor Green

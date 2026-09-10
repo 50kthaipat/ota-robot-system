@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -89,9 +90,16 @@ func main() {
 
 	// ── MQTT Client ─────────────────────────────────────────────────────────────
 	// Supports both local tcp:// (EMQX) and cloud ssl:// (HiveMQ Cloud)
-	mqttBroker := os.Getenv("MQTT_BROKER")
+	mqttBroker := strings.TrimSpace(os.Getenv("MQTT_BROKER"))
 	if mqttBroker == "" {
 		mqttBroker = "tcp://localhost:1883"
+	}
+	if !strings.Contains(mqttBroker, "://") {
+		if strings.Contains(mqttBroker, "8883") || strings.Contains(mqttBroker, "hivemq") {
+			mqttBroker = "ssl://" + mqttBroker
+		} else {
+			mqttBroker = "tcp://" + mqttBroker
+		}
 	}
 	mqttOpts := mqtt.NewClientOptions()
 	mqttOpts.AddBroker(mqttBroker)
@@ -100,18 +108,23 @@ func main() {
 	mqttOpts.SetMaxReconnectInterval(30 * time.Second)
 
 	// TLS config for cloud brokers (ssl:// prefix or MQTT_USE_TLS=true)
-	useTLS := strings.HasPrefix(mqttBroker, "ssl://") || os.Getenv("MQTT_USE_TLS") == "true"
+	useTLS := strings.HasPrefix(mqttBroker, "ssl://") || strings.HasPrefix(mqttBroker, "tls://") || os.Getenv("MQTT_USE_TLS") == "true"
 	if useTLS {
+		serverHost := ""
+		if u, err := url.Parse(mqttBroker); err == nil {
+			serverHost = u.Hostname()
+		}
 		mqttOpts.SetTLSConfig(&tls.Config{
 			MinVersion: tls.VersionTLS12,
+			ServerName: serverHost,
 		})
-		log.Println("[INFO] MQTT TLS enabled")
+		log.Printf("[INFO] MQTT TLS enabled (SNI: %s)", serverHost)
 	}
 
 	// Credentials for cloud brokers (HiveMQ requires username/password)
-	if mqttUsername := os.Getenv("MQTT_USERNAME"); mqttUsername != "" {
+	if mqttUsername := strings.TrimSpace(os.Getenv("MQTT_USERNAME")); mqttUsername != "" {
 		mqttOpts.SetUsername(mqttUsername)
-		mqttOpts.SetPassword(os.Getenv("MQTT_PASSWORD"))
+		mqttOpts.SetPassword(strings.TrimSpace(os.Getenv("MQTT_PASSWORD")))
 		log.Printf("[INFO] MQTT authenticating as user: %s", mqttUsername)
 	}
 
