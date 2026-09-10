@@ -14,9 +14,14 @@ if (-not $Password) {
     $Password = Read-Host "Enter HiveMQ Password"
 }
 
-$Broker = $Broker.Trim()
-$Username = $Username.Trim()
-$Password = $Password.Trim()
+# Strip any accidental whitespace or angle brackets
+$Broker = $Broker.Trim().Trim('<>').Trim()
+$Username = $Username.Trim().Trim('<>').Trim()
+$Password = $Password.Trim().Trim('<>').Trim()
+
+if (-not ($Broker.Contains("://"))) {
+    $Broker = "ssl://" + $Broker
+}
 
 $Devices = @(
     @{ Id = "robot-agv-001"; Model = "agv-v1"; Factory = "factory-bkk-01" },

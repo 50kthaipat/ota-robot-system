@@ -128,9 +128,10 @@ func main() {
 	}
 
 	// Credentials for cloud brokers
-	if mqttUser := strings.TrimSpace(os.Getenv("MQTT_USERNAME")); mqttUser != "" {
+	if mqttUser := strings.Trim(strings.TrimSpace(os.Getenv("MQTT_USERNAME")), "<>"); mqttUser != "" {
+		mqttPass := strings.Trim(strings.TrimSpace(os.Getenv("MQTT_PASSWORD")), "<>")
 		opts.SetUsername(mqttUser)
-		opts.SetPassword(strings.TrimSpace(os.Getenv("MQTT_PASSWORD")))
+		opts.SetPassword(mqttPass)
 		log.Printf("Robot %s: MQTT authenticating as user: %s", deviceID, mqttUser)
 	}
 

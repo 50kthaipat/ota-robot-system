@@ -122,9 +122,10 @@ func main() {
 	}
 
 	// Credentials for cloud brokers (HiveMQ requires username/password)
-	if mqttUsername := strings.TrimSpace(os.Getenv("MQTT_USERNAME")); mqttUsername != "" {
+	if mqttUsername := strings.Trim(strings.TrimSpace(os.Getenv("MQTT_USERNAME")), "<>"); mqttUsername != "" {
+		mqttPass := strings.Trim(strings.TrimSpace(os.Getenv("MQTT_PASSWORD")), "<>")
 		mqttOpts.SetUsername(mqttUsername)
-		mqttOpts.SetPassword(strings.TrimSpace(os.Getenv("MQTT_PASSWORD")))
+		mqttOpts.SetPassword(mqttPass)
 		log.Printf("[INFO] MQTT authenticating as user: %s", mqttUsername)
 	}
 
