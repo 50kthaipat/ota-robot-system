@@ -382,34 +382,36 @@ export default function FirmwarePage() {
                     <td className="px-6 py-4 text-slate-400 font-sans">
                       {new Date(fw.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-right font-sans space-x-2">
-                      <button
-                        onClick={() => handleDownload(fw.id)}
-                        className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition px-2 py-1 rounded bg-slate-800/60 hover:bg-slate-800"
-                        title="Download Binary via Presigned S3 URL"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" /> Presigned
-                      </button>
-                      <button
-                        onClick={() => openEditModal(fw)}
-                        className="inline-flex items-center gap-1 text-xs text-amber-400/90 hover:text-amber-300 transition px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20"
-                        title="Edit Version Tag & Release Notes"
-                      >
-                        <Pencil className="w-3.5 h-3.5" /> Edit
-                      </button>
-                      <button
-                        onClick={() => setDeletingFw(fw)}
-                        className="inline-flex items-center gap-1 text-xs text-rose-400/90 hover:text-rose-300 transition px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20"
-                        title="Delete Firmware Release"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Delete
-                      </button>
-                      <Link
-                        href={`/deploy?firmware=${fw.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition px-2 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20"
-                      >
-                        Deploy <Rocket className="w-3 h-3" />
-                      </Link>
+                    <td className="px-6 py-4 text-right font-sans whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleDownload(fw.id)}
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60"
+                          title="Download Binary via Presigned S3 URL"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Presigned
+                        </button>
+                        <button
+                          onClick={() => openEditModal(fw)}
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          title="Edit Version Tag & Release Notes"
+                        >
+                          <Pencil className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button
+                          onClick={() => setDeletingFw(fw)}
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          title="Delete Firmware Release"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
+                        <Link
+                          href={`/deploy?firmware=${fw.id}`}
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                        >
+                          <Rocket className="w-3.5 h-3.5" /> Deploy
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))

@@ -19,7 +19,7 @@ func NewDeviceHandler(pool *pgxpool.Pool) *DeviceHandler {
 }
 
 func (h *DeviceHandler) ListDevices(c fiber.Ctx) error {
-    _, _ = h.db.Exec(c.Context(), "UPDATE devices SET status = 'offline' WHERE last_seen < NOW() - INTERVAL '30 seconds' AND status != 'offline'")
+    _, _ = h.db.Exec(c.Context(), "UPDATE devices SET status = 'offline' WHERE last_seen < NOW() - INTERVAL '2 minutes' AND status != 'offline'")
     devices, err := h.queries.ListDevices(c.Context())
     if err != nil {
         return c.Status(500).JSON(fiber.Map{"error": err.Error()})
