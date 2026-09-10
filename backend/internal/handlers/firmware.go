@@ -99,7 +99,8 @@ func (h *FirmwareHandler) Upload(c fiber.Ctx) error {
         minio.PutObjectOptions{ContentType: "application/octet-stream"},
     )
     if err != nil {
-        return c.Status(500).JSON(fiber.Map{"error": "storage upload failed"})
+        log.Printf("Storage upload to bucket '%s' failed: %v", h.bucket, err)
+        return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("storage upload failed: %v", err)})
     }
 
     fw, err := h.queries.CreateFirmwareVersion(c.Context(), db.CreateFirmwareVersionParams{
