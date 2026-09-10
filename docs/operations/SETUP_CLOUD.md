@@ -33,23 +33,33 @@
 5. เลือกภูมิภาค (Region): `Southeast Asia (Singapore)`
 6. รอระบบจัดสรรทรัพยากรประมาณ 2 นาที
 
-### 1.2 จัดเก็บ Connection String
-1. ไปที่ Project Settings → Database
-2. เลื่อนลงไปที่ Connection string → เลือกแท็บ URI
-3. คัดลอกสตริงในรูปแบบ:
+### 1.2 จัดเก็บ Connection String (ใช้ Connection Pooler สำหรับ IPv4)
+> **ข้อควรระวัง:** Supabase ปรับระบบ Direct Connection (`db.[REF].supabase.co`) ให้รองรับเฉพาะ IPv6 เท่านั้น หากใช้งานบนเครือข่ายอินเทอร์เน็ตที่ยังไม่รองรับ IPv6 จะเกิดข้อผิดพลาด `lookup ...: no such host` จึงจำเป็นต้องใช้ **Connection Pooler (IPv4)** เสมอ
+
+1. ไปที่ Supabase Dashboard → กดปุ่ม **Connect** สีเขียวที่มุมขวาบน
+2. ตรงช่อง **Method** เลือก **Connection string**
+3. ตรงส่วน **Mode** เลือก **Session** (พอร์ต 5432)
+4. คัดลอกสตริงการเชื่อมต่อ ซึ่งจะมีรูปแบบดังนี้:
    ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+   postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require
    ```
 
-### 1.3 ดำเนินการ Database Migration
-เปิด PowerShell แล้วรันคำสั่ง:
+### 1.3 ดำเนินการ Database Migration (เลือกได้ 2 วิธี)
+
+**วิธีที่ 1 (แนะนำ - สะดวกรวดเร็วที่สุดผ่าน Web Dashboard):**
+1. ในหน้า Supabase Dashboard คลิกเมนูด้านซ้าย: **SQL Editor**
+2. กดปุ่ม **+ New query**
+3. เปิดไฟล์ `backend/internal/db/migrations/000001_init.up.sql` ในโปรเจกต์ คัดลอกโค้ดทั้งหมด (89 บรรทัด) แล้วนำมาวางในช่อง Query
+4. กดปุ่ม **Run** สีเขียวด้านล่างขวาเพื่อสร้างตารางทั้งหมดเสร็จสิ้นทันที
+
+**วิธีที่ 2 (ผ่าน PowerShell ด้วย Migrate CLI ร่วมกับ Pooler):**
 ```powershell
 # ติดตั้ง migrate tool (กรณีรันครั้งแรก)
 go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
-# ดำเนินการ Migration ไปยัง Supabase
+# ดำเนินการ Migration ผ่าน Connection Pooler (IPv4)
 migrate -path backend/internal/db/migrations `
-        -database "postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres?sslmode=require" `
+        -database "postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require" `
         up
 ```
 
