@@ -173,4 +173,4 @@ if auc is not None:
 joblib.dump(iso_forest, os.path.join(MODEL_DIR, "isolation_forest.pkl"))
 joblib.dump(scaler,     os.path.join(MODEL_DIR, "anomaly_scaler.pkl"))
 print(f"\n[INFO] Models saved → {MODEL_DIR}/")
-print("\n✅  Anomaly detection training complete!")
+print("\n[SUCCESS] Anomaly detection training complete!")

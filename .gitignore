@@ -62,3 +62,6 @@ scripts/k6/results.json
 *.pkl
 ml/models/
 ml/reports/
+
+backend/keys/
+simulator/keys/

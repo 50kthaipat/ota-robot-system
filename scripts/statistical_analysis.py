@@ -136,7 +136,7 @@ if len(direct) >= 2 and len(canary) >= 2:
     u_stat, p_val = mannwhitneyu(direct, canary, alternative="two-sided")
     log(f"\n  Mann-Whitney U statistic : {u_stat:.1f}")
     log(f"  p-value                  : {p_val:.6f}")
-    log(f"  Significance (α=0.05)    : {'✅ Significant (H₀ rejected)' if p_val < 0.05 else '❌ Not Significant'}")
+    log(f"  Significance (alpha=0.05): {'Significant (H0 rejected)' if p_val < 0.05 else 'Not Significant'}")
 
     # Effect size (rank-biserial correlation)
     n1, n2 = len(direct), len(canary)
@@ -262,8 +262,8 @@ survival_rates = [100 - direct_failure_rate, canary_survival_rate]
 
 x = np.arange(len(strategies))
 w = 0.35
-ax.bar(x - w/2, survival_rates, w, label="Survived ✅", color="#4CAF50", edgecolor="white")
-ax.bar(x + w/2, failure_rates,  w, label="Failed / Crashed ❌", color="#F44336", edgecolor="white")
+ax.bar(x - w/2, survival_rates, w, label="Survived", color="#4CAF50", edgecolor="white")
+ax.bar(x + w/2, failure_rates,  w, label="Failed / Crashed", color="#F44336", edgecolor="white")
 
 for i, (s, f) in enumerate(zip(survival_rates, failure_rates)):
     ax.text(i - w/2, s + 1, f"{s:.0f}%", ha="center", va="bottom", fontsize=11, fontweight="bold")
@@ -279,13 +279,13 @@ ax.grid(axis="y", alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(REPORT_DIR, "fleet_survival_comparison.png"), dpi=150, bbox_inches="tight")
 plt.close()
-log("[INFO] Fleet survival chart saved → reports/fleet_survival_comparison.png")
+log("[INFO] Fleet survival chart saved -> reports/fleet_survival_comparison.png")
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 # Save Report
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 report_path = os.path.join(REPORT_DIR, "statistical_report.txt")
 with open(report_path, "w", encoding="utf-8") as f:
     f.write("\n".join(report_lines))
-print(f"\n[INFO] Full report saved → {report_path}")
-print("\n✅  Statistical analysis complete!")
+print(f"\n[INFO] Full report saved -> {report_path}")
+print("\n[SUCCESS] Statistical analysis complete!")
