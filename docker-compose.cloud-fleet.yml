@@ -1,0 +1,69 @@
+﻿# docker-compose.cloud-fleet.yml
+# Runs an industrial multi-factory fleet of 5 robot controllers in isolated Docker containers,
+# communicating with the production HiveMQ Cloud broker.
+
+services:
+  robot-scara:
+    build:
+      context: ./simulator
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
+      - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USE_TLS=true
+      - DEVICE_ID=scara-bkk-01
+      - HW_MODEL=scara-v1
+      - FACTORY_ID=factory-bkk-01
+    restart: unless-stopped
+
+  robot-delta:
+    build:
+      context: ./simulator
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
+      - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USE_TLS=true
+      - DEVICE_ID=delta-rayong-02
+      - HW_MODEL=delta-v2
+      - FACTORY_ID=factory-rayong-02
+    restart: unless-stopped
+
+  robot-articulated:
+    build:
+      context: ./simulator
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
+      - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USE_TLS=true
+      - DEVICE_ID=articulated-chonburi-03
+      - HW_MODEL=articulated-v3
+      - FACTORY_ID=factory-chonburi-03
+    restart: unless-stopped
+
+  robot-cartesian:
+    build:
+      context: ./simulator
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
+      - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USE_TLS=true
+      - DEVICE_ID=cartesian-ayutthaya-04
+      - HW_MODEL=cartesian-v1
+      - FACTORY_ID=factory-ayutthaya-04
+    restart: unless-stopped
+
+  robot-agv:
+    build:
+      context: ./simulator
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER:-ssl://7673373eb5294edb9dce107a78cf57fd.s1.eu.hivemq.cloud:8883}
+      - MQTT_USERNAME=${MQTT_USERNAME:-Thaipat}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USE_TLS=true
+      - DEVICE_ID=agv-samutprakan-05
+      - HW_MODEL=agv-v1
+      - FACTORY_ID=factory-samutprakan-05
+    restart: unless-stopped
