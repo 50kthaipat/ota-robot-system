@@ -105,6 +105,17 @@ func (h *FirmwareHandler) Upload(c fiber.Ctx) error {
         return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("storage upload failed: %v", err)})
     }
 
+    // Free up any inactive firmware using this version
+    _, _ = h.db.Exec(c.Context(), "UPDATE firmware_versions SET version = version || '_archived_' || substr(id::text, 1, 8) WHERE version = $1 AND is_active = false", version)
+
+    // Check if an active firmware already uses this version
+    var activeID string
+    if err := h.db.QueryRow(c.Context(), "SELECT id FROM firmware_versions WHERE version = $1 AND is_active = true", version).Scan(&activeID); err == nil {
+        return c.Status(409).JSON(fiber.Map{
+            "error": fmt.Sprintf("Firmware version '%s' already exists in the fleet repository. Version tags must be unique.", version),
+        })
+    }
+
     fw, err := h.queries.CreateFirmwareVersion(c.Context(), db.CreateFirmwareVersionParams{
         Version:        version,
         StorageKey:     storageKey,
@@ -122,6 +133,12 @@ func (h *FirmwareHandler) Upload(c fiber.Ctx) error {
 }
 
 func (h *FirmwareHandler) backfillSignatures(ctx context.Context) {
+    // Free up any inactive soft-deleted firmwares from blocking version names
+    _, err := h.db.Exec(ctx, "UPDATE firmware_versions SET version = version || '_archived_' || substr(id::text, 1, 8) WHERE is_active = false AND version NOT LIKE '%_archived_%'")
+    if err != nil {
+        log.Printf("[DB] Auto-archive inactive versions error: %v", err)
+    }
+
     count, err := h.resignAllInternal(ctx)
     if err != nil {
         log.Printf("[SECURITY] backfillSignatures error: %v", err)
@@ -223,8 +240,9 @@ func (h *FirmwareHandler) Delete(c fiber.Ctx) error {
     }
 
     if deploymentCount > 0 {
-        // Soft delete to preserve historical deployment audit records
-        err = h.queries.DeactivateFirmwareVersion(c.Context(), fwUUID)
+        // Soft delete to preserve historical deployment audit records, while freeing up version string for new releases
+        archivedVersion := fw.Version + "_archived_" + id[:8]
+        _, err = h.db.Exec(c.Context(), "UPDATE firmware_versions SET is_active = false, version = $1 WHERE id = $2", archivedVersion, fwUUID)
         if err != nil {
             return c.Status(500).JSON(fiber.Map{"error": "failed to deactivate firmware: " + err.Error()})
         }
@@ -285,6 +303,19 @@ func (h *FirmwareHandler) Update(c fiber.Ctx) error {
     newNotes := existing.ReleaseNotes.String
     if req.ReleaseNotes != nil {
         newNotes = strings.TrimSpace(*req.ReleaseNotes)
+    }
+
+    if newVersion != existing.Version {
+        // 1. Free up any soft-deleted firmware holding this target version
+        _, _ = h.db.Exec(c.Context(), "UPDATE firmware_versions SET version = version || '_archived_' || substr(id::text, 1, 8) WHERE version = $1 AND is_active = false", newVersion)
+
+        // 2. Check if another active firmware already uses this version
+        var otherID string
+        if err := h.db.QueryRow(c.Context(), "SELECT id FROM firmware_versions WHERE version = $1 AND id != $2 AND is_active = true", newVersion, fwUUID).Scan(&otherID); err == nil {
+            return c.Status(409).JSON(fiber.Map{
+                "error": fmt.Sprintf("Firmware version '%s' already exists in the fleet repository. Version tags must be unique.", newVersion),
+            })
+        }
     }
 
     var updated db.FirmwareVersion
