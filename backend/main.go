@@ -58,9 +58,13 @@ func main() {
 		log.Println("[INFO] REDIS_URL not set — running without Redis cache")
 	}
 
-	minioEndpoint := os.Getenv("MINIO_ENDPOINT")
+	minioEndpoint := strings.TrimSpace(os.Getenv("MINIO_ENDPOINT"))
 	if minioEndpoint == "" {
 		minioEndpoint = "localhost:9000"
+	} else {
+		minioEndpoint = strings.TrimPrefix(minioEndpoint, "https://")
+		minioEndpoint = strings.TrimPrefix(minioEndpoint, "http://")
+		minioEndpoint = strings.TrimRight(minioEndpoint, "/")
 	}
 	minioClient, err := minio.New(minioEndpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(os.Getenv("MINIO_ACCESS_KEY"), os.Getenv("MINIO_SECRET_KEY"), ""),
