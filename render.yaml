@@ -1,0 +1,58 @@
+# render.yaml — Render.com Blueprint
+# https://render.com/docs/blueprint-spec
+#
+# Deploy: connect this repo on render.com → "New Blueprint" → auto-detects this file
+# Requires these secrets set in Render dashboard:
+#   DATABASE_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY,
+#   MQTT_BROKER, MQTT_USERNAME, MQTT_PASSWORD, ECDSA_PRIVATE_KEY_B64, JWT_SECRET
+
+services:
+  - type: web
+    name: ota-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # Database (Supabase)
+      - key: DATABASE_URL
+        sync: false          # ใส่ใน Render dashboard
+
+      # Storage (Cloudflare R2)
+      - key: MINIO_ENDPOINT
+        sync: false
+      - key: MINIO_ACCESS_KEY
+        sync: false
+      - key: MINIO_SECRET_KEY
+        sync: false
+      - key: MINIO_BUCKET
+        value: firmware
+      - key: MINIO_USE_SSL
+        value: "true"
+
+      # MQTT (HiveMQ Cloud)
+      - key: MQTT_BROKER
+        sync: false          # รูปแบบ: ssl://[cluster].hivemq.cloud:8883
+      - key: MQTT_USE_TLS
+        value: "true"
+      - key: MQTT_USERNAME
+        sync: false
+      - key: MQTT_PASSWORD
+        sync: false
+      - key: MQTT_CLIENT_ID
+        value: ota-api-render
+
+      # Security
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generate ให้
+      - key: ECDSA_PRIVATE_KEY_B64
+        sync: false          # base64 ของ keys/private.pem (ดูสคริปต์ scripts/encode_key.ps1)
+
+      # App
+      - key: API_PORT
+        value: "8000"
+      - key: ENV
+        value: production
+      - key: REDIS_URL
+        value: ""            # ไม่ใช้ Redis บน cloud (optional)

@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -37,16 +39,24 @@ func main() {
 	}
 	defer dbPool.Close()
 
+	// Redis — optional, skip gracefully when not available (cloud free tier)
 	redisUrl := os.Getenv("REDIS_URL")
-	if redisUrl == "" {
-		redisUrl = "redis://localhost:6379"
+	if redisUrl != "" {
+		opt, err := redis.ParseURL(redisUrl)
+		if err != nil {
+			log.Printf("[WARN] Unable to parse REDIS_URL: %v — skipping Redis", err)
+		} else {
+			rdb := redis.NewClient(opt)
+			defer rdb.Close()
+			if pingErr := rdb.Ping(context.Background()).Err(); pingErr != nil {
+				log.Printf("[WARN] Redis not reachable: %v — continuing without cache", pingErr)
+			} else {
+				log.Println("[INFO] Redis connected")
+			}
+		}
+	} else {
+		log.Println("[INFO] REDIS_URL not set — running without Redis cache")
 	}
-	opt, err := redis.ParseURL(redisUrl)
-	if err != nil {
-		log.Fatalf("Unable to parse redis url: %v\n", err)
-	}
-	rdb := redis.NewClient(opt)
-	defer rdb.Close()
 
 	minioEndpoint := os.Getenv("MINIO_ENDPOINT")
 	if minioEndpoint == "" {
@@ -57,7 +67,7 @@ func main() {
 		Secure: os.Getenv("MINIO_USE_SSL") == "true",
 	})
 	if err != nil {
-		log.Fatalf("Unable to connect to minio: %v\n", err)
+		log.Fatalf("Unable to connect to minio/R2: %v\n", err)
 	}
 	bucket := os.Getenv("MINIO_BUCKET")
 	if bucket == "" {
@@ -68,18 +78,40 @@ func main() {
 		minioClient.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{})
 	}
 
+	// ── MQTT Client ─────────────────────────────────────────────────────────────
+	// Supports both local tcp:// (EMQX) and cloud ssl:// (HiveMQ Cloud)
 	mqttBroker := os.Getenv("MQTT_BROKER")
 	if mqttBroker == "" {
 		mqttBroker = "tcp://localhost:1883"
 	}
 	mqttOpts := mqtt.NewClientOptions()
 	mqttOpts.AddBroker(mqttBroker)
-	mqttOpts.SetClientID("api-server-" + fmt.Sprintf("%d", time.Now().Unix()))
+	mqttOpts.SetClientID("ota-api-server-" + fmt.Sprintf("%d", time.Now().Unix()))
+	mqttOpts.SetAutoReconnect(true)
+	mqttOpts.SetMaxReconnectInterval(30 * time.Second)
+
+	// TLS config for cloud brokers (ssl:// prefix or MQTT_USE_TLS=true)
+	useTLS := strings.HasPrefix(mqttBroker, "ssl://") || os.Getenv("MQTT_USE_TLS") == "true"
+	if useTLS {
+		mqttOpts.SetTLSConfig(&tls.Config{
+			MinVersion: tls.VersionTLS12,
+		})
+		log.Println("[INFO] MQTT TLS enabled")
+	}
+
+	// Credentials for cloud brokers (HiveMQ requires username/password)
+	if mqttUsername := os.Getenv("MQTT_USERNAME"); mqttUsername != "" {
+		mqttOpts.SetUsername(mqttUsername)
+		mqttOpts.SetPassword(os.Getenv("MQTT_PASSWORD"))
+		log.Printf("[INFO] MQTT authenticating as user: %s", mqttUsername)
+	}
+
 	mqttClient := mqtt.NewClient(mqttOpts)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatalf("MQTT Connect error: %v", token.Error())
 	}
-	
+	log.Printf("[INFO] MQTT connected to %s", mqttBroker)
+
 	myMqttClient := mymqtt.NewClient(mqttClient, dbPool)
 	myMqttClient.Subscribe()
 

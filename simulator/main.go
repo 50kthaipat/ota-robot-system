@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -15,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -87,6 +89,20 @@ func main() {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
 	opts.SetClientID(deviceID)
+	opts.SetAutoReconnect(true)
+	opts.SetMaxReconnectInterval(30 * time.Second)
+
+	// TLS for cloud brokers (HiveMQ Cloud uses ssl://)
+	if strings.HasPrefix(broker, "ssl://") || os.Getenv("MQTT_USE_TLS") == "true" {
+		opts.SetTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12})
+		log.Printf("Robot %s: MQTT TLS enabled", deviceID)
+	}
+
+	// Credentials for cloud brokers
+	if mqttUser := os.Getenv("MQTT_USERNAME"); mqttUser != "" {
+		opts.SetUsername(mqttUser)
+		opts.SetPassword(os.Getenv("MQTT_PASSWORD"))
+	}
 
 	var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
