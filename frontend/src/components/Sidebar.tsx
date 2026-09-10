@@ -28,19 +28,19 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 glass-panel border-r border-slate-800/80 flex flex-col justify-between p-4 min-h-screen">
+    <aside className="w-64 bg-surface-1 border-r border-hairline flex flex-col justify-between p-4 min-h-screen select-none">
       <div>
         {/* Brand Header */}
-        <div className="flex items-center gap-3 px-2 py-4 mb-6 border-b border-slate-800/80">
-          <div className="p-2 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20">
-            <Cpu className="w-6 h-6" />
+        <div className="flex items-center gap-3 px-2 py-4 mb-6 border-b border-hairline">
+          <div className="p-2 rounded-md bg-primary/15 border border-primary/30 text-primary">
+            <Cpu className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="font-bold text-sm tracking-wide text-white flex items-center gap-1.5">
+            <h1 className="font-semibold text-sm tracking-tight text-ink flex items-center gap-1.5">
               ROBO-OTA
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 font-mono">v1.0</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-2 text-ink-subtle border border-hairline font-mono">v1.0</span>
             </h1>
-            <p className="text-[11px] text-slate-400">Fleet Control Plane</p>
+            <p className="text-[11px] text-ink-subtle tracking-wide">Fleet Control Plane</p>
           </div>
         </div>
 
@@ -55,13 +55,13 @@ export const Sidebar = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-150 ${
                   isActive
-                    ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-sm shadow-cyan-500/10"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    ? "bg-primary/10 text-primary-hover border border-primary/25 font-semibold"
+                    : "text-ink-subtle hover:text-ink hover:bg-surface-2"
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-cyan-400" : "text-slate-400"}`} />
+                <Icon className={`w-4 h-4 ${isActive ? "text-primary" : "text-ink-tertiary"}`} />
                 {item.label}
               </Link>
             );
@@ -70,33 +70,33 @@ export const Sidebar = () => {
       </div>
 
       {/* System Status Footer */}
-      <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
+      <div className="p-3 rounded-lg bg-surface-2 border border-hairline space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-400 flex items-center gap-1.5">
-            <Radio className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-ink-subtle flex items-center gap-1.5 text-[11px]">
+            <Radio className="w-3.5 h-3.5 text-ink-tertiary" />
             Backend API
           </span>
           {isBackendHealthy === null ? (
-            <span className="text-slate-400 font-mono text-[10px]">Checking...</span>
+            <span className="text-ink-tertiary font-mono text-[10px]">Checking...</span>
           ) : isBackendHealthy ? (
-            <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="flex items-center gap-1 text-[11px] text-semantic-success font-medium font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-semantic-success animate-pulse"></span>
               ONLINE
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-[11px] text-rose-400 font-medium font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+            <span className="flex items-center gap-1 text-[11px] text-semantic-error font-medium font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-semantic-error"></span>
               OFFLINE
             </span>
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/60">
-          <span className="text-slate-400 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+        <div className="flex items-center justify-between text-xs pt-1 border-t border-hairline">
+          <span className="text-ink-subtle flex items-center gap-1.5 text-[11px]">
+            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
             Cluster
           </span>
-          <span className="text-slate-300 font-mono text-[11px]">factory-local</span>
+          <span className="text-ink-muted font-mono text-[11px]">factory-cloud</span>
         </div>
       </div>
     </aside>

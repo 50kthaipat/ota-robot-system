@@ -13,8 +13,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ""
     case "success":
     case "completed":
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-semantic-success/10 text-semantic-success border border-semantic-success/20 ${className}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-semantic-success animate-pulse"></span>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
@@ -24,8 +24,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ""
     case "downloading":
     case "installing":
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-primary/15 text-primary-hover border border-primary/30 ${className}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-hover animate-ping"></span>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
@@ -33,24 +33,24 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ""
     case "failed":
     case "error":
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-semantic-error/10 text-semantic-error border border-semantic-error/20 ${className}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-semantic-error"></span>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
 
     case "rolled_back":
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary-secure border border-primary/20 ${className}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-secure"></span>
           Rolled Back
         </span>
       );
 
     case "pending":
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-surface-2 text-ink-muted border border-hairline-strong ${className}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-ink-subtle"></span>
           Pending
         </span>
       );
@@ -58,8 +58,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ""
     case "offline":
     default:
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-surface-2 text-ink-subtle border border-hairline ${className}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-ink-tertiary"></span>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );

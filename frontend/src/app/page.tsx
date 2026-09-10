@@ -78,11 +78,11 @@ export default function FleetOverviewPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Bot className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-2xl font-semibold tracking-tight text-ink flex items-center gap-2.5">
+            <Bot className="w-5 h-5 text-primary" />
             Fleet Overview
           </h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-xs text-ink-subtle mt-1 tracking-wide">
             Real-time telemetry and firmware deployment tracking for robot units.
           </p>
         </div>
@@ -91,15 +91,15 @@ export default function FleetOverviewPage() {
           <button
             onClick={() => loadFleet()}
             disabled={isRefreshing}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium bg-surface-1 hover:bg-surface-2 text-ink-muted border border-hairline hover:border-hairline-strong transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-cyan-400" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-primary" : "text-ink-tertiary"}`} />
             <span>Updated {formatRelativeTime(lastUpdated.toISOString())}</span>
           </button>
 
           <Link
             href="/deploy"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 transition"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors"
           >
             <Rocket className="w-3.5 h-3.5" />
             Launch Rollout
@@ -128,7 +128,7 @@ export default function FleetOverviewPage() {
           value={stats.updating}
           subtitle="Firmware in progress"
           icon={Cpu}
-          color="amber"
+          color="cyan"
         />
         <MetricCard
           title="Units Offline"
@@ -140,26 +140,26 @@ export default function FleetOverviewPage() {
       </div>
 
       {/* Fleet Filter & Table */}
-      <div className="glass-panel rounded-xl border border-slate-800/80 overflow-hidden">
+      <div className="bg-surface-1 rounded-xl border border-hairline overflow-hidden">
         {/* Filter Bar */}
-        <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-4 border-b border-hairline flex flex-col sm:flex-row items-center justify-between gap-4 bg-surface-1">
           <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-ink-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by device ID, model..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-md bg-surface-2 border border-hairline text-ink placeholder-ink-tertiary focus:outline-none focus:border-primary-focus focus:ring-1 focus:ring-primary-focus/50 transition-colors"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Filter className="w-4 h-4 text-slate-400" />
+            <Filter className="w-4 h-4 text-ink-tertiary" />
             <select
               value={factoryFilter}
               onChange={(e) => setFactoryFilter(e.target.value)}
-              className="px-3 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none focus:border-cyan-500"
+              className="px-3 py-1.5 text-xs rounded-md bg-surface-2 border border-hairline text-ink-muted focus:outline-none focus:border-primary-focus transition-colors"
             >
               <option value="all">All Factories</option>
               {factories.map((f) => (
@@ -174,7 +174,7 @@ export default function FleetOverviewPage() {
         {/* Devices Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+            <thead className="bg-canvas text-ink-subtle uppercase tracking-eyebrow text-[11px] border-b border-hairline">
               <tr>
                 <th className="px-6 py-3.5">Device ID</th>
                 <th className="px-6 py-3.5">Factory</th>
@@ -185,44 +185,44 @@ export default function FleetOverviewPage() {
                 <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-hairline font-mono">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-sans">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-cyan-400 mb-2" />
+                  <td colSpan={7} className="px-6 py-12 text-center text-ink-tertiary font-sans">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto text-primary mb-2" />
                     Connecting to telemetry streams...
                   </td>
                 </tr>
               ) : filteredDevices.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-sans">
+                  <td colSpan={7} className="px-6 py-12 text-center text-ink-tertiary font-sans">
                     No robot units match your search filters.
                   </td>
                 </tr>
               ) : (
                 filteredDevices.map((device) => (
-                  <tr key={device.id} className="hover:bg-slate-800/40 transition">
-                    <td className="px-6 py-4 font-semibold text-white flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+                  <tr key={device.id} className="hover:bg-surface-2/60 transition-colors">
+                    <td className="px-6 py-3.5 font-medium text-ink flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
                       {device.id}
                     </td>
-                    <td className="px-6 py-4 text-slate-300 font-sans">{device.factory_id}</td>
-                    <td className="px-6 py-4 text-slate-400">{device.hw_model}</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+                    <td className="px-6 py-3.5 text-ink-muted font-sans">{device.factory_id}</td>
+                    <td className="px-6 py-3.5 text-ink-subtle">{device.hw_model}</td>
+                    <td className="px-6 py-3.5">
+                      <span className="px-2 py-0.5 rounded bg-surface-2 text-primary-hover border border-hairline text-[11px]">
                         v{device.current_version}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-sans">
+                    <td className="px-6 py-3.5 font-sans">
                       <StatusBadge status={device.status} />
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-sans">
+                    <td className="px-6 py-3.5 text-ink-subtle font-sans">
                       {formatRelativeTime(device.last_seen)}
                     </td>
-                    <td className="px-6 py-4 text-right font-sans">
+                    <td className="px-6 py-3.5 text-right font-sans">
                       <Link
                         href={`/deploy?device=${device.id}`}
-                        className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition"
+                        className="inline-flex items-center gap-1 text-xs text-primary-hover hover:text-primary transition-colors font-medium"
                       >
                         Rollout <Rocket className="w-3 h-3" />
                       </Link>

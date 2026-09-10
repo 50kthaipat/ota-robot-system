@@ -180,40 +180,40 @@ export default function FirmwarePage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <HardDriveDownload className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-2xl font-semibold tracking-tight text-ink flex items-center gap-2.5">
+            <HardDriveDownload className="w-5 h-5 text-primary" />
             Firmware Repository
           </h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-xs text-ink-subtle mt-1 tracking-wide">
             Store, sign, and manage OTA binary images for the robot fleet.
           </p>
         </div>
 
         <button
           onClick={() => loadFirmwares()}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition w-fit"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium bg-surface-1 hover:bg-surface-2 text-ink-muted border border-hairline hover:border-hairline-strong transition-colors w-fit"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
+          <RefreshCw className="w-3.5 h-3.5 text-ink-tertiary" />
           Refresh Catalog
         </button>
       </div>
 
       {/* Upload Zone */}
-      <div className="glass-panel p-6 rounded-xl border border-slate-800">
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <UploadCloud className="w-4 h-4 text-cyan-400" />
+      <div className="bg-surface-1 p-6 rounded-xl border border-hairline">
+        <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-eyebrow mb-4 flex items-center gap-2">
+          <UploadCloud className="w-4 h-4 text-primary" />
           Upload New Firmware Release
         </h3>
 
         {uploadError && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-md bg-semantic-error/10 border border-semantic-error/20 text-semantic-error text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             {uploadError}
           </div>
         )}
 
         {uploadSuccess && (
-          <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-md bg-semantic-success/10 border border-semantic-success/20 text-semantic-success text-xs flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             {uploadSuccess}
           </div>
@@ -223,7 +223,7 @@ export default function FirmwarePage() {
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
-            className="border-2 border-dashed border-slate-700 hover:border-cyan-500/60 rounded-xl p-6 text-center cursor-pointer transition bg-slate-900/30 group"
+            className="border border-dashed border-hairline hover:border-primary/50 rounded-xl p-6 text-center cursor-pointer transition-colors bg-surface-2/40 group"
             onClick={() => document.getElementById("file-input")?.click()}
           >
             <input
@@ -234,20 +234,20 @@ export default function FirmwarePage() {
               className="hidden"
             />
             <div className="flex flex-col items-center justify-center gap-2">
-              <div className="p-3 rounded-full bg-slate-800 group-hover:bg-cyan-500/20 text-slate-400 group-hover:text-cyan-400 transition">
+              <div className="p-3 rounded-full bg-surface-2 group-hover:bg-primary/15 text-ink-subtle group-hover:text-primary transition-colors">
                 <FileCode className="w-6 h-6" />
               </div>
               {file ? (
                 <div>
-                  <p className="text-sm font-medium text-cyan-400">{file.name}</p>
-                  <p className="text-xs text-slate-400 font-mono mt-0.5">{formatBytes(file.size)}</p>
+                  <p className="text-sm font-medium text-primary-hover">{file.name}</p>
+                  <p className="text-xs text-ink-subtle font-mono mt-0.5">{formatBytes(file.size)}</p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-sm text-slate-300 font-medium">
-                    Drag and drop firmware binary (.bin) here, or <span className="text-cyan-400">browse</span>
+                  <p className="text-xs text-ink-muted font-medium">
+                    Drag and drop firmware binary (.bin) here, or <span className="text-primary-hover underline underline-offset-2">browse</span>
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">SHA256 checksum will be computed automatically</p>
+                  <p className="text-[11px] text-ink-tertiary mt-1">NIST P-256 signature and SHA256 checksum computed automatically</p>
                 </div>
               )}
             </div>
@@ -255,20 +255,20 @@ export default function FirmwarePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Version Tag <span className="text-rose-400">*</span>
+              <label className="block text-xs font-medium text-ink-muted mb-1">
+                Version Tag <span className="text-semantic-error">*</span>
               </label>
               <input
                 type="text"
                 placeholder="e.g. 1.2.0"
                 value={version}
                 onChange={(e) => setVersion(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink placeholder-ink-tertiary focus:outline-none focus:border-primary-focus font-mono transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-ink-muted mb-1">
                 Release Notes / Changelog
               </label>
               <input
@@ -276,7 +276,7 @@ export default function FirmwarePage() {
                 placeholder="e.g. Fixed joint vibration, updated motor limits"
                 value={releaseNotes}
                 onChange={(e) => setReleaseNotes(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink placeholder-ink-tertiary focus:outline-none focus:border-primary-focus transition-colors"
               />
             </div>
           </div>
@@ -285,16 +285,16 @@ export default function FirmwarePage() {
             <button
               type="submit"
               disabled={isUploading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 transition disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-50"
             >
               {isUploading ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   Computing Checksum & Uploading...
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-4 h-4" />
+                  <UploadCloud className="w-3.5 h-3.5" />
                   Publish Firmware Release
                 </>
               )}
@@ -304,16 +304,16 @@ export default function FirmwarePage() {
       </div>
 
       {/* Firmware Catalog Table */}
-      <div className="glass-panel rounded-xl border border-slate-800/80 overflow-hidden">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+      <div className="bg-surface-1 rounded-xl border border-hairline overflow-hidden">
+        <div className="p-4 border-b border-hairline flex items-center justify-between">
+          <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-eyebrow">
             Available Firmware Releases ({firmwares.length})
           </h3>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+            <thead className="bg-canvas text-ink-subtle uppercase tracking-eyebrow text-[11px] border-b border-hairline">
               <tr>
                 <th className="px-6 py-3.5">Version</th>
                 <th className="px-6 py-3.5">File Size</th>
@@ -323,91 +323,91 @@ export default function FirmwarePage() {
                 <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-hairline font-mono">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-sans">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-cyan-400 mb-2" />
+                  <td colSpan={6} className="px-6 py-12 text-center text-ink-tertiary font-sans">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto text-primary mb-2" />
                     Loading firmware catalog...
                   </td>
                 </tr>
               ) : firmwares.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-sans">
+                  <td colSpan={6} className="px-6 py-12 text-center text-ink-tertiary font-sans">
                     No firmware versions uploaded yet. Upload a .bin file above to begin.
                   </td>
                 </tr>
               ) : (
                 firmwares.map((fw) => (
-                  <tr key={fw.id} className="hover:bg-slate-800/40 transition">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-cyan-400 flex items-center gap-2">
+                  <tr key={fw.id} className="hover:bg-surface-2/60 transition-colors">
+                    <td className="px-6 py-3.5">
+                      <div className="font-semibold text-primary-hover flex items-center gap-2">
                         <span>v{fw.version}</span>
                         {fw.ecdsa_signature ? (
                           <span
-                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-sans font-medium"
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-semantic-success/10 text-semantic-success border border-semantic-success/20 font-sans font-medium"
                             title={`NIST P-256 Signature: ${fw.ecdsa_signature}`}
                           >
                             <ShieldCheck className="w-3 h-3" /> Signed
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-sans font-medium">
+                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-semantic-warning/10 text-semantic-warning border border-semantic-warning/20 font-sans font-medium">
                             Unsigned
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-400">{formatBytes(fw.file_size)}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3.5 text-ink-subtle">{formatBytes(fw.file_size)}</td>
+                    <td className="px-6 py-3.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-400 max-w-[140px] truncate" title={fw.sha256_checksum}>
+                        <span className="text-ink-subtle max-w-[140px] truncate" title={fw.sha256_checksum}>
                           {fw.sha256_checksum.slice(0, 16)}...
                         </span>
                         <button
                           onClick={() => handleCopyChecksum(fw.sha256_checksum, fw.id)}
-                          className="text-slate-500 hover:text-slate-300 transition"
+                          className="text-ink-tertiary hover:text-ink transition-colors"
                           title="Copy Full SHA256"
                         >
                           {copiedId === fw.id ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-semantic-success" />
                           ) : (
                             <Copy className="w-3.5 h-3.5" />
                           )}
                         </button>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-300 font-sans max-w-xs truncate">
+                    <td className="px-6 py-3.5 text-ink-muted font-sans max-w-xs truncate">
                       {fw.release_notes || "—"}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-sans">
+                    <td className="px-6 py-3.5 text-ink-subtle font-sans">
                       {new Date(fw.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-right font-sans whitespace-nowrap">
+                    <td className="px-6 py-3.5 text-right font-sans whitespace-nowrap">
                       <div className="inline-flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleDownload(fw.id)}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60"
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-surface-2 hover:bg-surface-3 text-ink-muted border border-hairline hover:border-hairline-strong"
                           title="Download Binary via Presigned S3 URL"
                         >
                           <ExternalLink className="w-3.5 h-3.5" /> Presigned
                         </button>
                         <button
                           onClick={() => openEditModal(fw)}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-surface-2 hover:bg-surface-3 text-ink-muted border border-hairline hover:border-hairline-strong"
                           title="Edit Version Tag & Release Notes"
                         >
                           <Pencil className="w-3.5 h-3.5" /> Edit
                         </button>
                         <button
                           onClick={() => setDeletingFw(fw)}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-semantic-error/10 hover:bg-semantic-error/20 text-semantic-error border border-semantic-error/25"
                           title="Delete Firmware Release"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Delete
                         </button>
                         <Link
                           href={`/deploy?firmware=${fw.id}`}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-primary hover:bg-primary-hover active:bg-primary-focus text-white"
                         >
                           <Rocket className="w-3.5 h-3.5" /> Deploy
                         </Link>
@@ -423,23 +423,23 @@ export default function FirmwarePage() {
 
       {/* Edit Firmware Modal */}
       {editingFw && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-md p-6 rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <Pencil className="w-4 h-4 text-amber-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 rounded-xl border border-hairline-strong bg-surface-1 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-hairline">
+              <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-primary" />
                 Edit Firmware Release
               </h3>
               <button
                 onClick={() => setEditingFw(null)}
-                className="text-slate-400 hover:text-white transition"
+                className="text-ink-tertiary hover:text-ink transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {updateError && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-md bg-semantic-error/10 border border-semantic-error/20 text-semantic-error text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {updateError}
               </div>
@@ -447,28 +447,28 @@ export default function FirmwarePage() {
 
             <form onSubmit={handleUpdate} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
-                  Version Tag <span className="text-rose-400">*</span>
+                <label className="block text-xs font-medium text-ink-muted mb-1">
+                  Version Tag <span className="text-semantic-error">*</span>
                 </label>
                 <input
                   type="text"
                   value={editVersion}
                   onChange={(e) => setEditVersion(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-amber-400 font-mono"
+                  className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus font-mono transition-colors"
                   placeholder="e.g. 1.2.0"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-ink-muted mb-1">
                   Release Notes / Changelog
                 </label>
                 <textarea
                   rows={3}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus transition-colors"
                   placeholder="Description of changes and updates..."
                 />
               </div>
@@ -477,14 +477,14 @@ export default function FirmwarePage() {
                 <button
                   type="button"
                   onClick={() => setEditingFw(null)}
-                  className="px-4 py-2 text-xs font-medium rounded-lg text-slate-300 hover:bg-slate-800 transition"
+                  className="px-3.5 py-1.5 text-xs font-medium rounded-md text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
                   Save Changes
@@ -497,33 +497,33 @@ export default function FirmwarePage() {
 
       {/* Delete Confirmation Modal */}
       {deletingFw && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-md p-6 rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-semibold text-white flex items-center gap-2 text-rose-400">
-                <Trash2 className="w-5 h-5 text-rose-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 rounded-xl border border-hairline-strong bg-surface-1 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-hairline">
+              <h3 className="text-sm font-semibold text-semantic-error flex items-center gap-2">
+                <Trash2 className="w-4 h-4" />
                 Confirm Firmware Deletion
               </h3>
               <button
                 onClick={() => setDeletingFw(null)}
-                className="text-slate-400 hover:text-white transition"
+                className="text-ink-tertiary hover:text-ink transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {deleteError && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-md bg-semantic-error/10 border border-semantic-error/20 text-semantic-error text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {deleteError}
               </div>
             )}
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               Are you sure you want to delete firmware release{" "}
-              <span className="font-bold text-white font-mono">v{deletingFw.version}</span>?
+              <span className="font-semibold text-ink font-mono">v{deletingFw.version}</span>?
             </p>
-            <p className="text-[11px] text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-800 leading-relaxed">
+            <p className="text-[11px] text-ink-subtle bg-surface-2 p-3 rounded-md border border-hairline leading-relaxed">
               If this version was already deployed in fleet rollouts, it will be safely deactivated to preserve historical audit logs. If unused, its storage object in Cloudflare R2 will also be permanently deleted.
             </p>
 
@@ -531,7 +531,7 @@ export default function FirmwarePage() {
               <button
                 type="button"
                 onClick={() => setDeletingFw(null)}
-                className="px-4 py-2 text-xs font-medium rounded-lg text-slate-300 hover:bg-slate-800 transition"
+                className="px-3.5 py-1.5 text-xs font-medium rounded-md text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
               >
                 Cancel
               </button>
@@ -539,7 +539,7 @@ export default function FirmwarePage() {
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-rose-600/20"
+                className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-semantic-error hover:bg-semantic-error/90 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
               >
                 {isDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
                 Confirm Delete

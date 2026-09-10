@@ -148,31 +148,31 @@ function DeployForm() {
     <div className="p-8 max-w-5xl w-full mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Rocket className="w-6 h-6 text-cyan-400" />
+        <h2 className="text-2xl font-semibold tracking-tight text-ink flex items-center gap-2.5">
+          <Rocket className="w-5 h-5 text-primary" />
           Launch OTA Rollout
         </h2>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-xs text-ink-subtle mt-1 tracking-wide">
           Select target firmware, define deployment scope, and execute safe over-the-air updates.
         </p>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 shrink-0" />
+        <div className="p-4 rounded-xl bg-semantic-error/10 border border-semantic-error/20 text-semantic-error text-xs flex items-center gap-3">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Step 1: Select Firmware */}
-      <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-4">
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono">1</span>
+      <div className="bg-surface-1 p-6 rounded-xl border border-hairline space-y-4">
+        <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-eyebrow flex items-center gap-2">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-surface-2 text-primary border border-hairline text-[11px] font-mono">1</span>
           Target Firmware Version
         </h3>
 
         {firmwares.length === 0 ? (
-          <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
+          <div className="p-4 rounded-md bg-semantic-warning/10 border border-semantic-warning/20 text-semantic-warning text-xs">
             No firmware versions available. Please upload a firmware binary first in the{" "}
             <a href="/firmware" className="underline font-semibold">Firmware Catalog</a>.
           </div>
@@ -184,20 +184,20 @@ function DeployForm() {
                 <div
                   key={fw.id}
                   onClick={() => setSelectedFwId(fw.id)}
-                  className={`p-4 rounded-xl border cursor-pointer transition ${
+                  className={`p-4 rounded-xl border cursor-pointer transition-colors ${
                     isSelected
-                      ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/10"
-                      : "border-slate-800 bg-slate-900/50 hover:border-slate-700"
+                      ? "border-primary bg-primary/10"
+                      : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-base text-white font-mono">v{fw.version}</span>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                    <span className="font-semibold text-base text-ink font-mono">v{fw.version}</span>
+                    {isSelected && <CheckCircle2 className="w-4 h-4 text-primary" />}
                   </div>
-                  <p className="text-xs text-slate-400 mt-1 truncate">
+                  <p className="text-xs text-ink-subtle mt-1 truncate">
                     {fw.release_notes || "Standard release"}
                   </p>
-                  <p className="text-[10px] text-slate-500 font-mono mt-2">
+                  <p className="text-[10px] text-ink-tertiary font-mono mt-2">
                     SHA: {fw.sha256_checksum.slice(0, 12)}...
                   </p>
                 </div>
@@ -208,9 +208,9 @@ function DeployForm() {
       </div>
 
       {/* Step 2: Target Scope */}
-      <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-4">
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono">2</span>
+      <div className="bg-surface-1 p-6 rounded-xl border border-hairline space-y-4">
+        <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-eyebrow flex items-center gap-2">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-surface-2 text-primary border border-hairline text-[11px] font-mono">2</span>
           Target Fleet Scope
         </h3>
 
@@ -218,51 +218,51 @@ function DeployForm() {
           <button
             type="button"
             onClick={() => setTargetScope("all")}
-            className={`p-4 rounded-xl border text-left transition ${
+            className={`p-4 rounded-xl border text-left transition-colors ${
               targetScope === "all"
-                ? "border-cyan-500 bg-cyan-500/10"
-                : "border-slate-800 bg-slate-900/50 hover:border-slate-700 text-slate-400"
+                ? "border-primary bg-primary/10"
+                : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2 text-ink-subtle"
             }`}
           >
-            <p className="text-xs font-bold text-white uppercase">All Online Units</p>
-            <p className="text-xs text-slate-400 mt-1">Deploy to all {eligibleDevices.length} online robots</p>
+            <p className="text-xs font-semibold text-ink uppercase tracking-wider">All Online Units</p>
+            <p className="text-xs text-ink-subtle mt-1">Deploy to all {eligibleDevices.length} online robots</p>
           </button>
 
           <button
             type="button"
             onClick={() => setTargetScope("factory")}
-            className={`p-4 rounded-xl border text-left transition ${
+            className={`p-4 rounded-xl border text-left transition-colors ${
               targetScope === "factory"
-                ? "border-cyan-500 bg-cyan-500/10"
-                : "border-slate-800 bg-slate-900/50 hover:border-slate-700 text-slate-400"
+                ? "border-primary bg-primary/10"
+                : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2 text-ink-subtle"
             }`}
           >
-            <p className="text-xs font-bold text-white uppercase">By Factory Group</p>
-            <p className="text-xs text-slate-400 mt-1">Filter units by manufacturing facility</p>
+            <p className="text-xs font-semibold text-ink uppercase tracking-wider">By Factory Group</p>
+            <p className="text-xs text-ink-subtle mt-1">Filter units by manufacturing facility</p>
           </button>
 
           <button
             type="button"
             onClick={() => setTargetScope("custom")}
-            className={`p-4 rounded-xl border text-left transition ${
+            className={`p-4 rounded-xl border text-left transition-colors ${
               targetScope === "custom"
-                ? "border-cyan-500 bg-cyan-500/10"
-                : "border-slate-800 bg-slate-900/50 hover:border-slate-700 text-slate-400"
+                ? "border-primary bg-primary/10"
+                : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2 text-ink-subtle"
             }`}
           >
-            <p className="text-xs font-bold text-white uppercase">Manual Selection</p>
-            <p className="text-xs text-slate-400 mt-1">Select individual robots from list</p>
+            <p className="text-xs font-semibold text-ink uppercase tracking-wider">Manual Selection</p>
+            <p className="text-xs text-ink-subtle mt-1">Select individual robots from list</p>
           </button>
         </div>
 
         {/* Factory Dropdown */}
         {targetScope === "factory" && (
           <div className="pt-2">
-            <label className="block text-xs font-medium text-slate-300 mb-1">Select Factory Facility</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">Select Factory Facility</label>
             <select
               value={selectedFactory}
               onChange={(e) => setSelectedFactory(e.target.value)}
-              className="px-3 py-2 text-xs rounded-lg bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none focus:border-cyan-500 w-full sm:w-80"
+              className="px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus w-full sm:w-80 transition-colors"
             >
               {factories.map((f) => (
                 <option key={f} value={f}>
@@ -277,39 +277,39 @@ function DeployForm() {
         {targetScope === "custom" && (
           <div className="pt-2 space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400 font-medium">
+              <span className="text-ink-subtle font-medium">
                 {selectedDeviceIds.length} of {eligibleDevices.length} robots selected
               </span>
               <button
                 type="button"
                 onClick={selectAllCustom}
-                className="text-cyan-400 hover:text-cyan-300 transition"
+                className="text-primary-hover hover:text-primary transition-colors font-medium"
               >
                 {selectedDeviceIds.length === eligibleDevices.length ? "Deselect All" : "Select All Online"}
               </button>
             </div>
 
-            <div className="max-h-60 overflow-y-auto divide-y divide-slate-800 border border-slate-800 rounded-lg bg-slate-900/40">
+            <div className="max-h-60 overflow-y-auto divide-y divide-hairline border border-hairline rounded-lg bg-surface-2/40">
               {eligibleDevices.map((d) => {
                 const checked = selectedDeviceIds.includes(d.id);
                 return (
                   <label
                     key={d.id}
-                    className="flex items-center justify-between p-3 hover:bg-slate-800/40 cursor-pointer text-xs"
+                    className="flex items-center justify-between p-3 hover:bg-surface-2/80 cursor-pointer text-xs transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleDeviceSelection(d.id)}
-                        className="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                        className="rounded bg-surface-2 border-hairline text-primary focus:ring-0 w-4 h-4 cursor-pointer accent-primary"
                       />
                       <div>
-                        <p className="font-mono text-white font-semibold">{d.id}</p>
-                        <p className="text-[11px] text-slate-400">{d.factory_id} • {d.hw_model}</p>
+                        <p className="font-mono text-ink font-semibold">{d.id}</p>
+                        <p className="text-[11px] text-ink-subtle">{d.factory_id} • {d.hw_model}</p>
                       </div>
                     </div>
-                    <span className="font-mono text-slate-400">Current: v{d.current_version}</span>
+                    <span className="font-mono text-ink-subtle">Current: v{d.current_version}</span>
                   </label>
                 );
               })}
@@ -319,56 +319,56 @@ function DeployForm() {
       </div>
 
       {/* Step 3: Strategy & Safety Controls */}
-      <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-4">
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono">3</span>
+      <div className="bg-surface-1 p-6 rounded-xl border border-hairline space-y-4">
+        <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-eyebrow flex items-center gap-2">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-surface-2 text-primary border border-hairline text-[11px] font-mono">3</span>
           Deployment Strategy & Safety Policies
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div
             onClick={() => setStrategy("full")}
-            className={`p-4 rounded-xl border cursor-pointer transition ${
+            className={`p-4 rounded-xl border cursor-pointer transition-colors ${
               strategy === "full"
-                ? "border-cyan-500 bg-cyan-500/10"
-                : "border-slate-800 bg-slate-900/50 hover:border-slate-700"
+                ? "border-primary bg-primary/10"
+                : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-white">Direct / Full Fleet Rollout</span>
-              {strategy === "full" && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+              <span className="font-semibold text-sm text-ink">Direct / Full Fleet Rollout</span>
+              {strategy === "full" && <CheckCircle2 className="w-4 h-4 text-primary" />}
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-ink-subtle mt-1 leading-relaxed">
               Dispatches the update payload to all targeted units simultaneously. Ideal for rapid development and testing.
             </p>
           </div>
 
           <div
             onClick={() => setStrategy("canary")}
-            className={`p-4 rounded-xl border cursor-pointer transition ${
+            className={`p-4 rounded-xl border cursor-pointer transition-colors ${
               strategy === "canary"
-                ? "border-cyan-500 bg-cyan-500/10"
-                : "border-slate-800 bg-slate-900/50 hover:border-slate-700"
+                ? "border-primary bg-primary/10"
+                : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-white">Canary Phased Rollout</span>
-              {strategy === "canary" && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+              <span className="font-semibold text-sm text-ink">Canary Phased Rollout</span>
+              {strategy === "canary" && <CheckCircle2 className="w-4 h-4 text-primary" />}
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Progressively deploys across phases (Phase 1: 20% ➡️ Phase 2: 60% ➡️ Phase 3: 100%) with wait observation intervals.
+            <p className="text-xs text-ink-subtle mt-1 leading-relaxed">
+              Progressively deploys across phases (Phase 1: 20% → Phase 2: 60% → Phase 3: 100%) with wait observation intervals.
             </p>
           </div>
         </div>
 
         {/* Safety Rollback Threshold */}
-        <div className="pt-2 border-t border-slate-800/80">
+        <div className="pt-3 border-t border-hairline">
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-300 font-medium flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4 text-amber-400" />
+            <span className="text-ink-muted font-medium flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4 text-semantic-warning" />
               Automated Emergency Rollback Threshold
             </span>
-            <span className="font-mono text-cyan-400 font-bold">{rollbackThreshold}% Failures</span>
+            <span className="font-mono text-primary-hover font-semibold">{rollbackThreshold}% Failures</span>
           </div>
           <input
             type="range"
@@ -377,21 +377,21 @@ function DeployForm() {
             step={5}
             value={rollbackThreshold}
             onChange={(e) => setRollbackThreshold(Number(e.target.value))}
-            className="w-full accent-cyan-500 cursor-pointer"
+            className="w-full accent-primary cursor-pointer"
           />
-          <p className="text-[11px] text-slate-500 mt-1">
+          <p className="text-[11px] text-ink-tertiary mt-1">
             If failure rate across units exceeds this threshold, rollout will immediately abort and command auto-rollback.
           </p>
         </div>
       </div>
 
       {/* Confirmation Bar */}
-      <div className="glass-panel p-6 rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 to-slate-900/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-surface-1 p-6 rounded-xl border border-hairline-strong flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h4 className="text-base font-bold text-white flex items-center gap-2">
-            Target: {selectedFw ? `v${selectedFw.version}` : "None"} ➡️ {targetDevices.length} Units
+          <h4 className="text-base font-semibold text-ink flex items-center gap-2">
+            Target: {selectedFw ? `v${selectedFw.version}` : "None"} → {targetDevices.length} Units
           </h4>
-          <p className="text-xs text-slate-400 mt-0.5 font-mono">
+          <p className="text-xs text-ink-subtle mt-0.5 font-mono">
             Strategy: {strategy.toUpperCase()} • Max Failure Tolerance: {rollbackThreshold}%
           </p>
         </div>
@@ -399,16 +399,16 @@ function DeployForm() {
         <button
           onClick={handleLaunch}
           disabled={isLaunching || targetDevices.length === 0 || !selectedFwId}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-xl shadow-cyan-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
           {isLaunching ? (
             <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               Broadcasting Rollout...
             </>
           ) : (
             <>
-              <Rocket className="w-4 h-4" />
+              <Rocket className="w-3.5 h-3.5" />
               Broadcast OTA Deployment
             </>
           )}

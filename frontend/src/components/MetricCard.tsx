@@ -11,40 +11,34 @@ interface MetricCardProps {
 
 const colorMap = {
   cyan: {
-    bg: "bg-cyan-500/10",
-    text: "text-cyan-400",
-    border: "border-cyan-500/20",
-    glow: "hover:border-cyan-500/40",
+    bg: "bg-primary/10",
+    text: "text-primary-hover",
+    border: "border-primary/20",
   },
   emerald: {
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-400",
-    border: "border-emerald-500/20",
-    glow: "hover:border-emerald-500/40",
+    bg: "bg-semantic-success/10",
+    text: "text-semantic-success",
+    border: "border-semantic-success/20",
   },
   amber: {
-    bg: "bg-amber-500/10",
-    text: "text-amber-400",
-    border: "border-amber-500/20",
-    glow: "hover:border-amber-500/40",
+    bg: "bg-semantic-warning/10",
+    text: "text-semantic-warning",
+    border: "border-semantic-warning/20",
   },
   rose: {
-    bg: "bg-rose-500/10",
-    text: "text-rose-400",
-    border: "border-rose-500/20",
-    glow: "hover:border-rose-500/40",
+    bg: "bg-semantic-error/10",
+    text: "text-semantic-error",
+    border: "border-semantic-error/20",
   },
   blue: {
-    bg: "bg-blue-500/10",
-    text: "text-blue-400",
-    border: "border-blue-500/20",
-    glow: "hover:border-blue-500/40",
+    bg: "bg-primary/10",
+    text: "text-primary",
+    border: "border-primary/20",
   },
   purple: {
-    bg: "bg-purple-500/10",
-    text: "text-purple-400",
-    border: "border-purple-500/20",
-    glow: "hover:border-purple-500/40",
+    bg: "bg-semantic-secure/10",
+    text: "text-semantic-secure",
+    border: "border-semantic-secure/20",
   },
 };
 
@@ -58,15 +52,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const styles = colorMap[color];
 
   return (
-    <div className={`glass-panel p-5 rounded-xl border transition-all duration-300 ${styles.border} ${styles.glow}`}>
+    <div className="bg-surface-1 hover:bg-surface-2 p-5 rounded-xl border border-hairline hover:border-hairline-strong transition-all duration-150">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{title}</p>
-          <p className="mt-1 text-2xl font-bold text-white tracking-tight">{value}</p>
-          {subtitle && <p className="mt-1 text-xs text-slate-400">{subtitle}</p>}
+          <p className="text-[11px] font-medium uppercase tracking-eyebrow text-ink-subtle">{title}</p>
+          <p className="mt-1.5 text-2xl font-semibold text-ink tracking-card-title">{value}</p>
+          {subtitle && <p className="mt-1 text-xs text-ink-tertiary">{subtitle}</p>}
         </div>
-        <div className={`p-3 rounded-lg ${styles.bg} ${styles.text}`}>
-          <Icon className="w-5 h-5" />
+        <div className={`p-2.5 rounded-md ${styles.bg} ${styles.text} border ${styles.border}`}>
+          <Icon className="w-4 h-4" />
         </div>
       </div>
     </div>

@@ -27,31 +27,31 @@ export default function DeploymentsHistoryPage() {
   }, []);
 
   return (
-    <div className="p-8 max-w-7xl w-full mx-auto space-y-8">
+    <div className="p-8 max-w-7xl w-full mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Activity className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-xl font-semibold tracking-tight text-ink flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" />
             Rollout Deployments History
           </h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-xs text-ink-muted mt-1">
             Historical audit log of all OTA firmware distribution jobs across the fleet.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => loadDeployments()}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-1 hover:bg-surface-2 text-ink border border-hairline transition"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 text-ink-muted" />
             Refresh
           </button>
 
           <Link
             href="/deploy"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 transition"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white shadow-sm transition"
           >
             <Rocket className="w-3.5 h-3.5" />
             New Rollout
@@ -60,75 +60,75 @@ export default function DeploymentsHistoryPage() {
       </div>
 
       {/* Table */}
-      <div className="glass-panel rounded-xl border border-slate-800 overflow-hidden">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+      <div className="bg-surface-1 rounded-lg border border-hairline overflow-hidden">
+        <div className="px-4 py-3 border-b border-hairline flex items-center justify-between bg-surface-1">
+          <h3 className="text-[11px] font-mono font-medium text-ink-muted uppercase tracking-wider">
             Deployments ({deployments.length})
           </h3>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+            <thead className="bg-surface-2/60 text-ink-muted uppercase tracking-wider text-[11px] font-mono border-b border-hairline">
               <tr>
-                <th className="px-6 py-3.5">Deployment ID</th>
-                <th className="px-6 py-3.5">Target Firmware</th>
-                <th className="px-6 py-3.5">Strategy</th>
-                <th className="px-6 py-3.5">Target Units</th>
-                <th className="px-6 py-3.5">Results</th>
-                <th className="px-6 py-3.5">Status</th>
-                <th className="px-6 py-3.5">Created At</th>
-                <th className="px-6 py-3.5 text-right">Details</th>
+                <th className="px-5 py-3">Deployment ID</th>
+                <th className="px-5 py-3">Target Firmware</th>
+                <th className="px-5 py-3">Strategy</th>
+                <th className="px-5 py-3">Target Units</th>
+                <th className="px-5 py-3">Results</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Created At</th>
+                <th className="px-5 py-3 text-right">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-hairline font-mono">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500 font-sans">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-cyan-400 mb-2" />
+                  <td colSpan={8} className="px-6 py-12 text-center text-ink-subtle font-sans">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto text-primary mb-2" />
                     Loading deployment history...
                   </td>
                 </tr>
               ) : deployments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500 font-sans">
+                  <td colSpan={8} className="px-6 py-12 text-center text-ink-subtle font-sans">
                     No deployments found. Use the &quot;New Rollout&quot; button to launch one.
                   </td>
                 </tr>
               ) : (
                 deployments.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-800/40 transition">
-                    <td className="px-6 py-4 font-bold text-white flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+                  <tr key={d.id} className="hover:bg-surface-2/40 transition">
+                    <td className="px-5 py-3.5 font-medium text-ink flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
                       {d.id.slice(0, 13)}...
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       {d.firmware_version ? (
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700 font-mono text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-surface-2 text-primary border border-hairline font-mono text-[11px]">
                           v{d.firmware_version}
                         </span>
                       ) : (
-                        <span className="text-slate-500 font-sans">-</span>
+                        <span className="text-ink-subtle font-sans">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 uppercase text-slate-300 font-sans">{d.strategy}</td>
-                    <td className="px-6 py-4 text-slate-300 font-sans">{d.total_devices} units</td>
-                    <td className="px-6 py-4 font-sans">
-                      <span className="text-emerald-400">{d.success_count} succeeded</span>
+                    <td className="px-5 py-3.5 uppercase text-ink-muted font-sans">{d.strategy}</td>
+                    <td className="px-5 py-3.5 text-ink-muted font-sans">{d.total_devices} units</td>
+                    <td className="px-5 py-3.5 font-sans">
+                      <span className="text-semantic-success">{d.success_count} succeeded</span>
                       {d.failure_count > 0 && (
-                        <span className="text-rose-400 ml-2">({d.failure_count} failed)</span>
+                        <span className="text-semantic-error ml-2">({d.failure_count} failed)</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 font-sans">
+                    <td className="px-5 py-3.5 font-sans">
                       <StatusBadge status={d.status} />
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-sans">
+                    <td className="px-5 py-3.5 text-ink-subtle font-sans">
                       {new Date(d.created_at).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-right font-sans">
+                    <td className="px-5 py-3.5 text-right font-sans">
                       <Link
                         href={`/deployments/${d.id}`}
-                        className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-hover font-medium transition"
                       >
                         Monitor <Eye className="w-3.5 h-3.5" />
                       </Link>
