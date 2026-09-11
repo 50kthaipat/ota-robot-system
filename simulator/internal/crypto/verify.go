@@ -80,8 +80,7 @@ func LoadPublicKey() *ecdsa.PublicKey {
 // for data collection (thesis Section 4.2).
 func VerifySignature(pub *ecdsa.PublicKey, data []byte, signatureB64 string) VerificationResult {
 	if pub == nil {
-		// No key loaded — skip verification (treat as valid for backward compat)
-		return VerificationResult{Valid: true, OverheadMs: 0, DetectionStage: "skipped_no_key"}
+		return VerificationResult{Valid: false, OverheadMs: 0, DetectionStage: "missing_public_key"}
 	}
 
 	if signatureB64 == "" {
@@ -113,7 +112,7 @@ func VerifySignature(pub *ecdsa.PublicKey, data []byte, signatureB64 string) Ver
 // the download pipeline to avoid re-reading the file).
 func VerifySignatureFromHex(pub *ecdsa.PublicKey, sha256Hex, signatureB64 string) VerificationResult {
 	if pub == nil {
-		return VerificationResult{Valid: true, OverheadMs: 0, DetectionStage: "skipped_no_key"}
+		return VerificationResult{Valid: false, OverheadMs: 0, DetectionStage: "missing_public_key"}
 	}
 	if signatureB64 == "" {
 		return VerificationResult{Valid: false, OverheadMs: 0, DetectionStage: "missing_signature"}

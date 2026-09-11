@@ -84,3 +84,19 @@ func TestSignAndVerifyHash(t *testing.T) {
 		t.Fatalf("Verification should fail for invalid signature")
 	}
 }
+
+func TestEnsureKeypair_ProductionFailsWithoutKey(t *testing.T) {
+	origEnv := os.Getenv("ENV")
+	defer os.Setenv("ENV", origEnv)
+
+	os.Setenv("ENV", "production")
+	// Ensure no private key env vars
+	os.Unsetenv("ECDSA_PRIVATE_KEY_B64")
+	os.Unsetenv("ECDSA_PRIVATE_KEY_PEM")
+
+	_, _, err := EnsureKeypair("non_existent_priv.pem", "non_existent_pub.pem")
+	if err == nil {
+		t.Fatalf("expected EnsureKeypair to return error in production when no key is provided, got nil")
+	}
+}
+

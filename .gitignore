@@ -1,5 +1,7 @@
 # Environment variables and secrets
 .env
+.env.*
+!.env.example
 *.env.local
 *.env.production
 
@@ -51,6 +53,14 @@ infra/grafana/png/
 keys/private.pem
 keys/*.private.pem
 *.pem.key
+*private*.pem
+*.key
+*.pfx
+*.p12
+*.pkcs8
+id_rsa*
+id_ecdsa*
+secrets/
 
 # Experimental Datasets & Benchmark Output (Local Research Data)
 data/experiments/
@@ -58,7 +68,7 @@ benchmark_data/
 scripts/k6/results.json
 *.csv
 
-# ML ¡ª Generated outputs (regenerate via ml/src/*.py + scripts/statistical_analysis.py)
+# ML generated outputs (regenerate via ml/src/*.py + scripts/statistical_analysis.py)
 *.pkl
 ml/models/
 ml/reports/

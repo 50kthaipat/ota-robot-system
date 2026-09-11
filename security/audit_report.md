@@ -117,3 +117,19 @@
 - **การตรวจสอบ:** `backend/go.mod` และ `frontend/package.json`
 - **ผลการตรวจ:** **ผ่าน (PASS)**
 - **รายละเอียด:** ทุกไลบรารีที่ใช้งานเป็นแพ็กเกจมาตรฐานที่ได้รับการยืนยันความน่าเชื่อถือจากชุมชนอย่างเป็นทางการ
+
+---
+
+## สรุปการปรับปรุงความปลอดภัยล่าสุด (Security Hardening & Sanitization - 11 กันยายน 2026)
+
+1. **การปกป้องกุญแจส่วนตัวในระบบ Production (ECDSA Fail-Fast):**
+   * แก้ไขฟังก์ชัน `EnsureKeypair` ใน `backend/internal/crypto/ecdsa.go` ให้ปฏิเสธการเริ่มระบบด้วย `errors.New` หากรันในสภาวะ `ENV=production` โดยไม่มีการกำหนดกุญแจผ่าน `ECDSA_PRIVATE_KEY_B64` หรือไฟล์กุญแจจริง ป้องกันการนำ Test Key สาธารณะไปลงนามเฟิร์มแวร์จริง 100%
+2. **การบังคับใช้ JWT Secret ใน Production:**
+   * ปรับปรุงฟังก์ชัน `getJWTSecret` ใน `backend/internal/auth/jwt.go` ให้ทำ `log.Fatal` ทันทีหากตรวจพบว่า `ENV=production` แต่ไม่ได้กำหนด `JWT_SECRET` หรือใช้ค่าดีฟอลต์
+3. **การบังคับใช้นโยบาย Zero-Trust สำหรับ Robot Agent Simulator:**
+   * ปรับปรุง `VerifySignature` และ `VerifySignatureFromHex` ใน `simulator/internal/crypto/verify.go` ให้ปฏิเสธเฟิร์มแวร์ (`Valid: false`) และระบุ `DetectionStage: "missing_public_key"` เสมอหากหุ่นยนต์ไม่มี Public Key ห้ามข้ามการตรวจสอบโดยเด็ดขาด
+4. **การชำระข้อมูลละเอียดอ่อน (Config Sanitization):**
+   * ลบหมายเลข HiveMQ Cloud Cluster และชื่อผู้ใช้ส่วนตัวออกจาก `docker-compose.cloud-fleet.yml` โดยเปลี่ยนเป็น Generic Placeholders
+5. **การขยายกฎความปลอดภัยใน `.gitignore`:**
+   * ครอบคลุมไฟล์ความลับและกุญแจทุกประเภท ได้แก่ `*.key`, `*private*.pem`, `*.pfx`, `*.p12`, `*.pkcs8`, `id_rsa*`, `id_ecdsa*`, `.env.*` (ยกเว้น `.env.example`) และโฟลเดอร์ `secrets/`
+

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"log"
 	"os"
 	"time"
 
@@ -22,6 +23,11 @@ type Claims struct {
 
 func getJWTSecret() []byte {
 	secret := os.Getenv("JWT_SECRET")
+	if os.Getenv("ENV") == "production" {
+		if secret == "" || secret == "ota-robot-system-default-jwt-secret-key-32b" || secret == "change-me-in-production-use-long-random-string" {
+			log.Fatal("[FATAL SECURITY] JWT_SECRET must be explicitly set to a secure secret in production mode")
+		}
+	}
 	if secret == "" {
 		secret = "ota-robot-system-default-jwt-secret-key-32b"
 	}

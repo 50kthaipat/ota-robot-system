@@ -10,6 +10,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -143,7 +144,12 @@ func EnsureKeypair(privPath, pubPath string) (*ecdsa.PrivateKey, *ecdsa.PublicKe
 		}
 	}
 
-	// 4. Fall back to embedded master keypair (guarantees fleet compatibility)
+	// 4. Fall back to embedded master keypair (guarantees fleet compatibility in dev mode only)
+	if os.Getenv("ENV") == "production" {
+		return nil, nil, errors.New("security violation: production environment requires ECDSA_PRIVATE_KEY_B64 or valid key file, refusing to use fallback test key")
+	}
+
+	log.Println("[WARN] Using embedded fallback ECDSA private key. DO NOT USE IN PRODUCTION.")
 	priv, err := ParsePrivateKeyFromPEM([]byte(DefaultPrivateKeyPEM))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse default embedded private key: %w", err)
