@@ -12,7 +12,6 @@ import {
   RefreshCw,
   RotateCcw,
   Clock,
-  Layers,
   Check,
   ShieldCheck,
   AlertTriangle,
@@ -160,68 +159,6 @@ export default function DeploymentDetailPage() {
         </div>
       )}
 
-      {deployment.strategy === "canary" && (
-        <div className="bg-surface-1 p-5 rounded-lg border border-hairline space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold text-ink uppercase tracking-wider font-mono">
-                Canary Phased Rollout Schedule
-              </span>
-            </div>
-            <span className="text-xs font-mono text-primary font-medium px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
-              {deployment.status === "completed"
-                ? "Completed: Phase 3 (100% Fleet)"
-                : `Active Phase: ${deployment.current_phase || 1} (${deployment.canary_percentage || 20}% Fleet)`}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 pt-1">
-            <div
-              className={`p-3 rounded-lg border transition ${
-                deployment.status === "completed" || (deployment.current_phase || 1) >= 1
-                  ? "bg-primary/10 border-primary/30 text-ink"
-                  : "bg-surface-2/40 border-hairline text-ink-subtle"
-              }`}
-            >
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-medium uppercase">Phase 1: Canary</span>
-                <span className="font-mono text-primary font-bold">20%</span>
-              </div>
-              <p className="text-[10px] text-ink-muted mt-1">Initial 1 robot node telemetry observation</p>
-            </div>
-
-            <div
-              className={`p-3 rounded-lg border transition ${
-                deployment.status === "completed" || (deployment.current_phase || 1) >= 2
-                  ? "bg-primary/10 border-primary/30 text-ink"
-                  : "bg-surface-2/40 border-hairline text-ink-subtle"
-              }`}
-            >
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-medium uppercase">Phase 2: Expanded</span>
-                <span className="font-mono text-primary font-bold">60%</span>
-              </div>
-              <p className="text-[10px] text-ink-muted mt-1">Multi-factory telemetry validation</p>
-            </div>
-
-            <div
-              className={`p-3 rounded-lg border transition ${
-                deployment.status === "completed" || (deployment.current_phase || 1) >= 3
-                  ? "bg-primary/10 border-primary/30 text-ink"
-                  : "bg-surface-2/40 border-hairline text-ink-subtle"
-              }`}
-            >
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-medium uppercase">Phase 3: Full Fleet</span>
-                <span className="font-mono text-primary font-bold">100%</span>
-              </div>
-              <p className="text-[10px] text-ink-muted mt-1">Total distributed fleet upgrade</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {rollbackMsg && (
         <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs flex items-center gap-2">
           <Check className="w-4 h-4 text-primary shrink-0" />
@@ -257,17 +194,66 @@ export default function DeploymentDetailPage() {
         </div>
       </div>
 
-      <div className="bg-surface-1 p-5 rounded-lg border border-hairline space-y-2.5">
+      <div className="bg-surface-1 p-5 rounded-lg border border-hairline space-y-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-ink uppercase tracking-wider text-[11px] font-mono">Overall Rollout Progress</span>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-ink uppercase tracking-wider text-[11px] font-mono">
+              Overall Rollout Progress
+            </span>
+            {deployment.strategy === "canary" && (
+              <span className="text-[10px] font-mono text-primary font-medium px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                {deployment.status === "completed"
+                  ? "Phase 3 (100%)"
+                  : `Phase ${deployment.current_phase || 1} (${deployment.canary_percentage || 20}%)`}
+              </span>
+            )}
+          </div>
           <span className="font-mono text-primary font-medium">{progressPercent}%</span>
         </div>
+
         <div className="w-full bg-surface-2 h-2 rounded-full overflow-hidden border border-hairline">
           <div
             className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           ></div>
         </div>
+
+        {deployment.strategy === "canary" && (
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            <div
+              className={`px-3 py-2 rounded border text-[11px] flex items-center justify-between transition ${
+                deployment.status === "completed" || (deployment.current_phase || 1) >= 1
+                  ? "bg-primary/10 border-primary/30 text-ink"
+                  : "bg-surface-2/30 border-hairline text-ink-subtle"
+              }`}
+            >
+              <span className="font-mono uppercase text-[10px]">Phase 1: Canary</span>
+              <span className="font-mono text-primary font-semibold text-[10px]">20%</span>
+            </div>
+
+            <div
+              className={`px-3 py-2 rounded border text-[11px] flex items-center justify-between transition ${
+                deployment.status === "completed" || (deployment.current_phase || 1) >= 2
+                  ? "bg-primary/10 border-primary/30 text-ink"
+                  : "bg-surface-2/30 border-hairline text-ink-subtle"
+              }`}
+            >
+              <span className="font-mono uppercase text-[10px]">Phase 2: Expanded</span>
+              <span className="font-mono text-primary font-semibold text-[10px]">60%</span>
+            </div>
+
+            <div
+              className={`px-3 py-2 rounded border text-[11px] flex items-center justify-between transition ${
+                deployment.status === "completed" || (deployment.current_phase || 1) >= 3
+                  ? "bg-primary/10 border-primary/30 text-ink"
+                  : "bg-surface-2/30 border-hairline text-ink-subtle"
+              }`}
+            >
+              <span className="font-mono uppercase text-[10px]">Phase 3: Full Fleet</span>
+              <span className="font-mono text-primary font-semibold text-[10px]">100%</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-surface-1 rounded-lg border border-hairline overflow-hidden">

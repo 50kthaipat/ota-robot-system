@@ -115,14 +115,7 @@ export default function DeploymentsHistoryPage() {
                         <span className="text-ink-subtle font-sans">-</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 uppercase text-ink-muted font-sans flex items-center gap-1.5">
-                      {d.strategy}
-                      {d.strategy === "canary" && (
-                        <span className="text-[10px] font-mono text-primary normal-case px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
-                          {d.status === "completed" ? "Phase 3 (100%)" : `Phase ${d.current_phase || 1}`}
-                        </span>
-                      )}
-                    </td>
+                    <td className="px-5 py-3.5 uppercase text-ink-muted font-mono">{d.strategy}</td>
                     <td className="px-5 py-3.5 text-ink-muted font-sans">{d.total_devices} units</td>
                     <td className="px-5 py-3.5 font-sans">
                       <span className="text-semantic-success">{d.success_count} succeeded</span>
