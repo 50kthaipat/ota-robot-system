@@ -17,13 +17,39 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
-let inMemoryToken: string | null = null;
+const TOKEN_KEY = "robo_ota_access_token";
+const REFRESH_TOKEN_KEY = "robo_ota_refresh_token";
 
-export const setAccessToken = (token: string | null) => {
+let inMemoryToken: string | null = null;
+let inMemoryRefreshToken: string | null = null;
+
+if (typeof window !== "undefined") {
+  inMemoryToken = localStorage.getItem(TOKEN_KEY);
+  inMemoryRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export const setAccessToken = (token: string | null, refreshToken?: string | null) => {
   inMemoryToken = token;
+  if (typeof window !== "undefined") {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+    if (refreshToken !== undefined) {
+      if (refreshToken) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+        inMemoryRefreshToken = refreshToken;
+      } else {
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+        inMemoryRefreshToken = null;
+      }
+    }
+  }
 };
 
 export const getAccessToken = () => inMemoryToken;
+export const getRefreshToken = () => inMemoryRefreshToken;
 
 async function fetchJSON<T>(url: string, init?: RequestInit, retry = true): Promise<T> {
   const headers: Record<string, string> = {
@@ -42,24 +68,33 @@ async function fetchJSON<T>(url: string, init?: RequestInit, retry = true): Prom
     cache: "no-store",
   });
 
-  // Handle 401 Unauthorized by attempting silent token refresh
+  // Handle 401 Unauthorized by attempting token refresh
   if (res.status === 401 && retry && !url.includes("/api/v1/auth/")) {
     try {
+      const refreshHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (inMemoryRefreshToken) {
+        refreshHeaders["X-Refresh-Token"] = inMemoryRefreshToken;
+      }
+
       const refreshRes = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
         method: "POST",
+        headers: refreshHeaders,
         credentials: "include",
         cache: "no-store",
+        body: inMemoryRefreshToken ? JSON.stringify({ refresh_token: inMemoryRefreshToken }) : undefined,
       });
 
       if (refreshRes.ok) {
         const data: AuthResponse = await refreshRes.json();
-        setAccessToken(data.token);
+        setAccessToken(data.token, data.refresh_token);
         return fetchJSON<T>(url, init, false);
       } else {
-        setAccessToken(null);
+        setAccessToken(null, null);
       }
     } catch {
-      setAccessToken(null);
+      setAccessToken(null, null);
     }
   }
 
@@ -97,25 +132,51 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    setAccessToken(res.token);
+    setAccessToken(res.token, res.refresh_token);
     return res;
   },
 
   async refresh(): Promise<AuthResponse> {
-    const res = await fetchJSON<AuthResponse>("/api/v1/auth/refresh", {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (inMemoryRefreshToken) {
+      headers["X-Refresh-Token"] = inMemoryRefreshToken;
+    }
+
+    const res = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
+      headers,
+      credentials: "include",
+      cache: "no-store",
+      body: inMemoryRefreshToken ? JSON.stringify({ refresh_token: inMemoryRefreshToken }) : undefined,
     });
-    setAccessToken(res.token);
-    return res;
+
+    if (!res.ok) {
+      setAccessToken(null, null);
+      throw new Error("Session expired or refresh failed");
+    }
+
+    const data: AuthResponse = await res.json();
+    setAccessToken(data.token, data.refresh_token);
+    return data;
   },
 
   async logout(): Promise<void> {
     try {
+      const headers: Record<string, string> = {};
+      if (inMemoryRefreshToken) {
+        headers["X-Refresh-Token"] = inMemoryRefreshToken;
+      }
       await fetchJSON("/api/v1/auth/logout", {
         method: "POST",
+        headers,
       });
     } finally {
-      setAccessToken(null);
+      setAccessToken(null, null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("robo_ota_user");
+      }
     }
   },
 

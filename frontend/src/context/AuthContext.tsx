@@ -1,8 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Cpu } from "lucide-react";
 import { User } from "@/lib/types";
 import { api, setAccessToken } from "@/lib/api";
+
+const USER_STORAGE_KEY = "robo_ota_user";
+const TOKEN_STORAGE_KEY = "robo_ota_access_token";
 
 interface AuthContextType {
   user: User | null;
@@ -15,21 +20,73 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Initialize synchronously from localStorage if in browser
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(USER_STORAGE_KEY);
+      if (stored) {
+        try {
+          return JSON.parse(stored) as User;
+        } catch {}
+      }
+    }
+    return null;
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (stored) {
+        setAccessToken(stored);
+        return stored;
+      }
+    }
+    return null;
+  });
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Attempt initial session restore via HttpOnly cookie refresh
+  // Attempt initial session restore & verification
   const restoreSession = useCallback(async () => {
     try {
+      // If we already have a cached token, verify with /me
+      const currentToken = typeof window !== "undefined" ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
+      if (currentToken) {
+        setAccessToken(currentToken);
+        try {
+          const meRes = await api.getMe();
+          setUser(meRes.user);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(meRes.user));
+          }
+          setIsLoading(false);
+          return;
+        } catch {
+          // Access token might be expired, attempt refresh below
+        }
+      }
+
+      // Try refresh endpoint (via cookie or X-Refresh-Token)
       const res = await api.refresh();
       setUser(res.user);
       setToken(res.token);
-      setAccessToken(res.token);
+      setAccessToken(res.token, res.refresh_token);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
+        localStorage.setItem(TOKEN_STORAGE_KEY, res.token);
+      }
     } catch {
+      // Both verification and refresh failed: clear session
       setUser(null);
       setToken(null);
-      setAccessToken(null);
+      setAccessToken(null, null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -39,11 +96,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restoreSession();
   }, [restoreSession]);
 
+  // Route guarding: protect all dashboard pages and redirect unauthenticated visits to /login
+  useEffect(() => {
+    if (!isLoading) {
+      if (!user && pathname !== "/login") {
+        router.replace("/login");
+      } else if (user && pathname === "/login") {
+        router.replace("/");
+      }
+    }
+  }, [user, isLoading, pathname, router]);
+
   const login = async (username: string, password: string) => {
     const res = await api.login({ username, password });
     setUser(res.user);
     setToken(res.token);
-    setAccessToken(res.token);
+    setAccessToken(res.token, res.refresh_token);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
+      localStorage.setItem(TOKEN_STORAGE_KEY, res.token);
+    }
   };
 
   const logout = async () => {
@@ -52,9 +124,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
       setToken(null);
-      setAccessToken(null);
+      setAccessToken(null, null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
+      router.replace("/login");
     }
   };
+
+  // If loading and visiting a protected route without cached user, show sleek loading indicator
+  if (isLoading && !user && pathname !== "/login") {
+    return (
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-ink select-none">
+        <div className="flex flex-col items-center gap-3">
+          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-primary animate-pulse">
+            <Cpu className="w-8 h-8" />
+          </div>
+          <div className="space-y-1 text-center">
+            <p className="font-mono text-xs text-ink-muted uppercase tracking-wider">
+              Verifying Session
+            </p>
+            <p className="font-mono text-[10px] text-ink-tertiary">
+              Connecting to Cloud Control Plane...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated and on a protected route, block render until redirect triggers
+  if (!isLoading && !user && pathname !== "/login") {
+    return null;
+  }
 
   return (
     <AuthContext.Provider

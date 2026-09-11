@@ -194,14 +194,21 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 		})
 	}
 
-	// Set HttpOnly, Secure, SameSite=Strict cookie
+	sameSite := "None"
+	secure := true
+	if os.Getenv("COOKIE_INSECURE") == "true" {
+		sameSite = "Lax"
+		secure = false
+	}
+
+	// Set HttpOnly, Secure, SameSite=None cookie for cross-origin SPA (Vercel <-> Cloud API)
 	c.Cookie(&fiber.Cookie{
 		Name:     "refresh_token",
 		Value:    rawRefreshToken,
 		Expires:  expiresAt,
 		HTTPOnly: true,
-		Secure:   os.Getenv("COOKIE_INSECURE") != "true", // secure unless explicitly turned off for local dev
-		SameSite: "Strict",
+		Secure:   secure,
+		SameSite: sameSite,
 		Path:     "/",
 	})
 
@@ -211,7 +218,8 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"token": accessToken,
+		"token":         accessToken,
+		"refresh_token": rawRefreshToken,
 		"user": UserResponse{
 			ID:       userIDStr,
 			Username: user.Username,
@@ -224,8 +232,16 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 	rawToken := c.Cookies("refresh_token")
 	if rawToken == "" {
-		// Fallback to body or header
 		rawToken = c.Get("X-Refresh-Token")
+	}
+	if rawToken == "" {
+		var req struct {
+			RefreshToken string `json:"refresh_token"`
+		}
+		_ = c.Bind().Body(&req)
+		if req.RefreshToken != "" {
+			rawToken = req.RefreshToken
+		}
 	}
 
 	if rawToken == "" {
@@ -279,13 +295,20 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 
+	sameSite := "None"
+	secure := true
+	if os.Getenv("COOKIE_INSECURE") == "true" {
+		sameSite = "Lax"
+		secure = false
+	}
+
 	c.Cookie(&fiber.Cookie{
 		Name:     "refresh_token",
 		Value:    newRawRefresh,
 		Expires:  expiresAt,
 		HTTPOnly: true,
-		Secure:   os.Getenv("COOKIE_INSECURE") != "true",
-		SameSite: "Strict",
+		Secure:   secure,
+		SameSite: sameSite,
 		Path:     "/",
 	})
 
@@ -295,7 +318,8 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"token": newAccessToken,
+		"token":         newAccessToken,
+		"refresh_token": newRawRefresh,
 		"user": UserResponse{
 			ID:       userIDStr,
 			Username: user.Username,
