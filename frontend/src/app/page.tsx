@@ -174,7 +174,7 @@ export default function FleetOverviewPage() {
         {/* Devices Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-canvas text-ink-subtle uppercase tracking-eyebrow text-[11px] border-b border-hairline">
+            <thead className="bg-surface-2/60 text-ink-muted uppercase tracking-wider text-[11px] font-mono border-b border-hairline">
               <tr>
                 <th className="px-6 py-3.5">Device ID</th>
                 <th className="px-6 py-3.5">Factory</th>
