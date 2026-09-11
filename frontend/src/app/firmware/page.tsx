@@ -240,7 +240,7 @@ export default function FirmwarePage() {
             <input
               id="file-input"
               type="file"
-              accept=".bin,.tar.gz,.img"
+              accept=".bin,.tar.gz,.img,.hex"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -256,7 +256,7 @@ export default function FirmwarePage() {
               ) : (
                 <div>
                   <p className="text-xs text-ink-muted font-medium">
-                    Drag and drop firmware binary (.bin) here, or <span className="text-primary-hover underline underline-offset-2">browse</span>
+                    Drag and drop firmware (.bin, .hex, .tar.gz, .img) here, or <span className="text-primary-hover underline underline-offset-2">browse</span>
                   </p>
                   <p className="text-[11px] text-ink-tertiary mt-1">NIST P-256 signature and SHA256 checksum computed automatically</p>
                 </div>
