@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Initialize synchronously from localStorage if in browser
+  // Initialize from localStorage if in browser for instant render (Zero Flash)
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(USER_STORAGE_KEY);
@@ -47,17 +47,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null;
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // If we already have a cached user and token in localStorage, do not block the UI on F5 refresh!
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+      const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (storedUser && storedToken) {
+        return false; // Instant display!
+      }
+    }
+    return true;
+  });
 
-  // Attempt initial session restore & verification
+  // Attempt session verification & silent refresh
   const restoreSession = useCallback(async () => {
     try {
-      // If we already have a cached token, verify with /me
       const currentToken = typeof window !== "undefined" ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
       if (currentToken) {
         setAccessToken(currentToken);
         try {
-          const meRes = await api.getMe();
+          const mePromise = api.getMe();
+          const timeoutPromise = new Promise<{ user: User }>((_, reject) =>
+            setTimeout(() => reject(new Error("Verification timeout")), 4000)
+          );
+          const meRes = await Promise.race([mePromise, timeoutPromise]);
           setUser(meRes.user);
           if (typeof window !== "undefined") {
             localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(meRes.user));
@@ -65,12 +78,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsLoading(false);
           return;
         } catch {
-          // Access token might be expired, attempt refresh below
+          // Access token might be expired or timed out, attempt refresh below
         }
       }
 
       // Try refresh endpoint (via cookie or X-Refresh-Token)
-      const res = await api.refresh();
+      const refreshPromise = api.refresh();
+      const timeoutPromise = new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error("Refresh timeout")), 4000)
+      );
+      const res = await Promise.race([refreshPromise, timeoutPromise]);
+
       setUser(res.user);
       setToken(res.token);
       setAccessToken(res.token, res.refresh_token);
@@ -133,19 +151,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // If loading and visiting a protected route without cached user, show sleek loading indicator
+  // If loading and visiting a protected route without cached user, show sleek FULLSCREEN centered loading indicator
   if (isLoading && !user && pathname !== "/login") {
     return (
-      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-ink select-none">
+      <div className="fixed inset-0 z-50 w-screen h-screen bg-canvas flex flex-col items-center justify-center text-ink select-none">
         <div className="flex flex-col items-center gap-3">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-primary animate-pulse">
+          <div className="p-3.5 rounded-2xl bg-primary/10 border border-primary/20 text-primary animate-pulse shadow-lg">
             <Cpu className="w-8 h-8" />
           </div>
-          <div className="space-y-1 text-center">
-            <p className="font-mono text-xs text-ink-muted uppercase tracking-wider">
+          <div className="space-y-1.5 text-center">
+            <p className="font-mono text-xs font-medium text-ink-muted uppercase tracking-wider">
               Verifying Session
             </p>
-            <p className="font-mono text-[10px] text-ink-tertiary">
+            <p className="font-mono text-[11px] text-ink-tertiary">
               Connecting to Cloud Control Plane...
             </p>
           </div>
