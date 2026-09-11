@@ -12,7 +12,13 @@ const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
   }
-  return typeof window !== "undefined" ? "" : (process.env.API_INTERNAL_URL || "http://127.0.0.1:8000");
+  if (typeof window !== "undefined") {
+    if (window.location.hostname.endsWith("vercel.app")) {
+      return "https://ota-api-omxf.onrender.com";
+    }
+    return "";
+  }
+  return process.env.API_INTERNAL_URL || "http://127.0.0.1:8000";
 };
 
 const BASE_URL = getBaseUrl();
@@ -204,7 +210,13 @@ export const api = {
       headers["Authorization"] = `Bearer ${inMemoryToken}`;
     }
 
-    const res = await fetch(`${BASE_URL}/api/v1/firmware/upload`, {
+    // Explicitly target the Render backend when on Vercel to bypass Vercel's 4.5MB proxy ceiling
+    const uploadBase =
+      (typeof window !== "undefined" && window.location.hostname.endsWith("vercel.app"))
+        ? (process.env.NEXT_PUBLIC_API_URL || "https://ota-api-omxf.onrender.com").replace(/\/$/, "")
+        : BASE_URL;
+
+    const res = await fetch(`${uploadBase}/api/v1/firmware/upload`, {
       method: "POST",
       headers,
       credentials: "include",
@@ -212,11 +224,16 @@ export const api = {
     });
 
     if (!res.ok) {
-      let msg = "Upload failed";
+      let msg = `Upload failed (${res.status} ${res.statusText})`;
       try {
         const d = await res.json();
         if (d.error) msg = d.error;
-      } catch {}
+      } catch {
+        try {
+          const raw = await res.text();
+          if (raw) msg = raw.trim();
+        } catch {}
+      }
       throw new Error(msg);
     }
     return res.json();

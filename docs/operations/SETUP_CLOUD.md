@@ -156,7 +156,7 @@ ENV                   = production
 ### 4.4 Deploy และตรวจสอบสถานะ
 - กด Create Web Service
 - รอระบบดำเนินการ Build และ Deploy ประมาณ 3-5 นาที
-- ทดสอบการทำงาน: `https://ota-api.onrender.com/health` จะต้องได้ผลลัพธ์ `OK`
+- ทดสอบการทำงาน: `https://ota-api-omxf.onrender.com/health` จะต้องได้ผลลัพธ์ `OK`
 
 ---
 
@@ -169,10 +169,10 @@ ENV                   = production
 ```json
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://ota-api.onrender.com/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://ota-api-omxf.onrender.com/api/$1" }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://ota-api.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://ota-api-omxf.onrender.com"
   }
 }
 ```
@@ -183,8 +183,8 @@ ENV                   = production
 3. ตั้งค่า Framework Preset: Next.js
 4. ตั้งค่า Root Directory: `frontend`
 5. กำหนด Environment Variables:
-   - `NEXT_PUBLIC_API_URL` = `https://ota-api.onrender.com`
-   - `API_INTERNAL_URL` = `https://ota-api.onrender.com`
+   - `NEXT_PUBLIC_API_URL` = `https://ota-api-omxf.onrender.com`
+   - `API_INTERNAL_URL` = `https://ota-api-omxf.onrender.com`
 6. กด Deploy และรอประมาณ 2 นาที จะได้รับ Domain เช่น `https://ota-robot-system.vercel.app`
 
 ---
@@ -193,10 +193,10 @@ ENV                   = production
 
 ```powershell
 # 1. ตรวจสอบสถานะ API
-Invoke-RestMethod "https://ota-api.onrender.com/health"
+Invoke-RestMethod "https://ota-api-omxf.onrender.com/health"
 
 # 2. ตรวจสอบรายการอุปกรณ์หุ่นยนต์
-Invoke-RestMethod "https://ota-api.onrender.com/api/v1/devices" | ConvertTo-Json
+Invoke-RestMethod "https://ota-api-omxf.onrender.com/api/v1/devices" | ConvertTo-Json
 
 # 3. เปิดหน้าแดชบอร์ดผ่านเบราว์เซอร์
 Start-Process "https://ota-robot-system.vercel.app"
@@ -209,9 +209,9 @@ Start-Process "https://ota-robot-system.vercel.app"
 | บริการ | URL |
 |---|---|
 | **Web Dashboard** | `https://ota-robot-system.vercel.app` |
-| **Backend API** | `https://ota-api.onrender.com` |
-| **API Health Check** | `https://ota-api.onrender.com/health` |
-| **API Metrics (Prometheus)** | `https://ota-api.onrender.com/metrics` |
+| **Backend API** | `https://ota-api-omxf.onrender.com` |
+| **API Health Check** | `https://ota-api-omxf.onrender.com/health` |
+| **API Metrics (Prometheus)** | `https://ota-api-omxf.onrender.com/metrics` |
 
 ---
 

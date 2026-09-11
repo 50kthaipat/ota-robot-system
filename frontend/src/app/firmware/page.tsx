@@ -153,7 +153,11 @@ export default function FirmwarePage() {
       setReleaseNotes("");
       loadFirmwares();
     } catch (err: any) {
-      setUploadError(err.message || "Failed to upload firmware binary");
+      let msg = err.message || "Failed to upload firmware binary";
+      if (msg.includes("Failed to fetch")) {
+        msg = "Network error (Failed to fetch). Please check connection or ensure backend is awake.";
+      }
+      setUploadError(msg);
     } finally {
       setIsUploading(false);
     }

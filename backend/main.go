@@ -142,7 +142,10 @@ func main() {
 	myMqttClient := mymqtt.NewClient(mqttClient, dbPool)
 	myMqttClient.Subscribe()
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit:         100 * 1024 * 1024, // 100 MB to support large binary firmware uploads
+		StreamRequestBody: true,
+	})
 	app.Use(logger.New())
 	app.Use(recover.New())
 
