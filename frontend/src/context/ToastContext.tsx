@@ -67,68 +67,71 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* Top-Center Toast Container */}
       <div
         aria-live="polite"
-        className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md px-4 transition-all"
+        className="fixed inset-x-0 top-5 z-[9999] flex flex-col items-center pointer-events-none px-4"
+        style={{ left: 0, right: 0, top: "1.25rem" }}
       >
-        {toasts.map((item) => {
-          const typeConfig = {
-            success: {
-              border: "border-semantic-success/40",
-              bg: "bg-surface-1/95 shadow-semantic-success/5",
-              icon: <CheckCircle2 className="w-4 h-4 text-semantic-success shrink-0 mt-0.5" />,
-              badgeBg: "bg-semantic-success/15 text-semantic-success",
-              titleColor: "text-semantic-success",
-            },
-            error: {
-              border: "border-semantic-error/40",
-              bg: "bg-surface-1/95 shadow-semantic-error/5",
-              icon: <AlertOctagon className="w-4 h-4 text-semantic-error shrink-0 mt-0.5" />,
-              badgeBg: "bg-semantic-error/15 text-semantic-error",
-              titleColor: "text-semantic-error",
-            },
-            warning: {
-              border: "border-semantic-warning/40",
-              bg: "bg-surface-1/95 shadow-semantic-warning/5",
-              icon: <AlertTriangle className="w-4 h-4 text-semantic-warning shrink-0 mt-0.5" />,
-              badgeBg: "bg-semantic-warning/15 text-semantic-warning",
-              titleColor: "text-semantic-warning",
-            },
-            info: {
-              border: "border-primary/40",
-              bg: "bg-surface-1/95 shadow-primary/5",
-              icon: <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />,
-              badgeBg: "bg-primary/15 text-primary",
-              titleColor: "text-primary",
-            },
-          }[item.type];
+        <div className="w-full max-w-md flex flex-col items-center gap-2 pointer-events-none">
+          {toasts.map((item) => {
+            const typeConfig = {
+              success: {
+                border: "border-semantic-success/40",
+                bg: "bg-surface-1/95 shadow-semantic-success/5",
+                icon: <CheckCircle2 className="w-4 h-4 text-semantic-success shrink-0 mt-0.5" />,
+                badgeBg: "bg-semantic-success/15 text-semantic-success",
+                titleColor: "text-semantic-success",
+              },
+              error: {
+                border: "border-semantic-error/40",
+                bg: "bg-surface-1/95 shadow-semantic-error/5",
+                icon: <AlertOctagon className="w-4 h-4 text-semantic-error shrink-0 mt-0.5" />,
+                badgeBg: "bg-semantic-error/15 text-semantic-error",
+                titleColor: "text-semantic-error",
+              },
+              warning: {
+                border: "border-semantic-warning/40",
+                bg: "bg-surface-1/95 shadow-semantic-warning/5",
+                icon: <AlertTriangle className="w-4 h-4 text-semantic-warning shrink-0 mt-0.5" />,
+                badgeBg: "bg-semantic-warning/15 text-semantic-warning",
+                titleColor: "text-semantic-warning",
+              },
+              info: {
+                border: "border-primary/40",
+                bg: "bg-surface-1/95 shadow-primary/5",
+                icon: <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />,
+                badgeBg: "bg-primary/15 text-primary",
+                titleColor: "text-primary",
+              },
+            }[item.type];
 
-          return (
-            <div
-              key={item.id}
-              role="status"
-              className={`pointer-events-auto w-full flex items-start gap-3 p-3.5 rounded-xl border ${typeConfig.border} ${typeConfig.bg} backdrop-blur-md shadow-2xl transition-all duration-300 transform translate-y-0 opacity-100 animate-in fade-in slide-in-from-top-3`}
-            >
-              {typeConfig.icon}
-              <div className="flex-1 min-w-0">
-                <p className={`text-xs font-semibold ${typeConfig.titleColor} tracking-tight`}>
-                  {item.title}
-                </p>
-                {item.message && (
-                  <p className="text-[11px] text-ink-subtle mt-0.5 leading-relaxed break-words font-sans">
-                    {item.message}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => removeToast(item.id)}
-                className="text-ink-tertiary hover:text-ink p-0.5 rounded transition-colors shrink-0"
-                aria-label="Close notification"
+            return (
+              <div
+                key={item.id}
+                role="status"
+                className={`pointer-events-auto w-full flex items-start gap-3 p-3.5 rounded-xl border ${typeConfig.border} ${typeConfig.bg} backdrop-blur-md shadow-2xl transition-all duration-300 transform translate-y-0 opacity-100 animate-in fade-in slide-in-from-top-3`}
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          );
-        })}
+                {typeConfig.icon}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-semibold ${typeConfig.titleColor} tracking-tight`}>
+                    {item.title}
+                  </p>
+                  {item.message && (
+                    <p className="text-[11px] text-ink-subtle mt-0.5 leading-relaxed break-words font-sans">
+                      {item.message}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeToast(item.id)}
+                  className="text-ink-tertiary hover:text-ink p-0.5 rounded transition-colors shrink-0"
+                  aria-label="Close notification"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </ToastContext.Provider>
   );
