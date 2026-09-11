@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS refresh_tokens;
+ALTER TABLE users DROP COLUMN IF EXISTS locked_until;
+ALTER TABLE users DROP COLUMN IF EXISTS failed_attempts;
+ALTER TABLE users DROP COLUMN IF EXISTS email;

@@ -75,11 +75,22 @@ type FirmwareVersion struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+type RefreshToken struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type User struct {
-	ID           pgtype.UUID        `json:"id"`
-	Username     string             `json:"username"`
-	PasswordHash string             `json:"password_hash"`
-	Role         string             `json:"role"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID             pgtype.UUID        `json:"id"`
+	Username       string             `json:"username"`
+	PasswordHash   string             `json:"password_hash"`
+	Role           string             `json:"role"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	Email          pgtype.Text        `json:"email"`
+	FailedAttempts int32              `json:"failed_attempts"`
+	LockedUntil    pgtype.Timestamptz `json:"locked_until"`
 }

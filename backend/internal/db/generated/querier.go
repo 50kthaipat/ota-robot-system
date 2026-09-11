@@ -15,12 +15,20 @@ type Querier interface {
 	CreateDeployment(ctx context.Context, arg CreateDeploymentParams) (Deployment, error)
 	CreateDeploymentDevice(ctx context.Context, arg CreateDeploymentDeviceParams) (DeploymentDevice, error)
 	CreateFirmwareVersion(ctx context.Context, arg CreateFirmwareVersionParams) (FirmwareVersion, error)
+	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateFirmwareVersion(ctx context.Context, id pgtype.UUID) error
+	DeleteRefreshToken(ctx context.Context, tokenHash string) error
+	DeleteUserRefreshTokens(ctx context.Context, userID pgtype.UUID) error
 	GetActiveDeploymentDeviceByDevice(ctx context.Context, deviceID string) (DeploymentDevice, error)
 	GetDeployment(ctx context.Context, id pgtype.UUID) (Deployment, error)
 	GetDevice(ctx context.Context, id string) (Device, error)
 	GetFirmwareVersion(ctx context.Context, id pgtype.UUID) (FirmwareVersion, error)
 	GetFirmwareVersionByVersion(ctx context.Context, version string) (FirmwareVersion, error)
+	GetRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error)
+	GetUserByEmailOrUsername(ctx context.Context, email pgtype.Text) (User, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetUserByUsername(ctx context.Context, username string) (User, error)
 	IncrementDeploymentFailure(ctx context.Context, id pgtype.UUID) error
 	IncrementDeploymentSuccess(ctx context.Context, id pgtype.UUID) error
 	ListDeploymentDevices(ctx context.Context, deploymentID pgtype.UUID) ([]ListDeploymentDevicesRow, error)
@@ -28,11 +36,13 @@ type Querier interface {
 	ListDevices(ctx context.Context) ([]Device, error)
 	ListDevicesByFactory(ctx context.Context, factoryID string) ([]Device, error)
 	ListFirmwareVersions(ctx context.Context) ([]FirmwareVersion, error)
+	ResetUserFailedAttempts(ctx context.Context, id pgtype.UUID) error
 	UpdateDeploymentDeviceStatus(ctx context.Context, arg UpdateDeploymentDeviceStatusParams) (DeploymentDevice, error)
 	UpdateDeploymentPhase(ctx context.Context, arg UpdateDeploymentPhaseParams) (Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, arg UpdateDeploymentStatusParams) (Deployment, error)
 	UpdateDeviceStatus(ctx context.Context, arg UpdateDeviceStatusParams) (Device, error)
 	UpdateDeviceVersion(ctx context.Context, arg UpdateDeviceVersionParams) (Device, error)
+	UpdateUserFailedAttempts(ctx context.Context, arg UpdateUserFailedAttemptsParams) error
 	UpsertDevice(ctx context.Context, arg UpsertDeviceParams) (Device, error)
 }
 

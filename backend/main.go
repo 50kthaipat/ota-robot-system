@@ -12,6 +12,8 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/helmet"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,6 +26,7 @@ import (
 
 	"github.com/ota-robot/api/internal/handlers"
 	"github.com/ota-robot/api/internal/metrics"
+	"github.com/ota-robot/api/internal/middleware"
 	mymqtt "github.com/ota-robot/api/internal/mqtt"
 )
 
@@ -142,7 +145,37 @@ func main() {
 	app := fiber.New()
 	app.Use(logger.New())
 	app.Use(recover.New())
-	app.Use(cors.New())
+
+	// Explicit CORS Whitelist for Vercel & Localhost
+	allowedOrigins := []string{
+		"http://localhost:3000",
+		"http://127.0.0.1:3000",
+		"https://ota-robot-system.vercel.app",
+	}
+	if customOrigin := os.Getenv("FRONTEND_URL"); customOrigin != "" {
+		for _, o := range strings.Split(customOrigin, ",") {
+			o = strings.TrimSpace(strings.TrimRight(o, "/"))
+			if o != "" {
+				allowedOrigins = append(allowedOrigins, o)
+			}
+		}
+	}
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     allowedOrigins,
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Refresh-Token"},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowCredentials: true,
+	}))
+
+	// Security Headers
+	app.Use(helmet.New())
+
+	// General API Rate Limiter: 120 req/min
+	app.Use(limiter.New(limiter.Config{
+		Max:        120,
+		Expiration: 1 * time.Minute,
+	}))
+
 	app.Use(metrics.HTTPMiddleware())
 
 	metrics.StartFleetMetricsSync(dbPool, 5*time.Second)
@@ -150,6 +183,11 @@ func main() {
 	deviceHandler := handlers.NewDeviceHandler(dbPool)
 	firmwareHandler := handlers.NewFirmwareHandler(dbPool, minioClient, bucket)
 	deploymentHandler := handlers.NewDeploymentHandler(dbPool, minioClient, bucket, myMqttClient)
+	authHandler := handlers.NewAuthHandler(dbPool)
+
+	if err := authHandler.AutoMigrateAndSeed(context.Background()); err != nil {
+		log.Printf("[WARN] Auth database setup notification: %v", err)
+	}
 
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -161,19 +199,47 @@ func main() {
 	})
 	app.Get("/health", func(c fiber.Ctx) error { return c.SendString("OK") })
 
+	// Strict rate limiter for Login: 5 attempts per 1 minute
+	loginLimiter := limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "too many login attempts. Please wait 1 minute before trying again.",
+			})
+		},
+	})
+
 	api := app.Group("/api/v1")
-	api.Get("/devices", deviceHandler.ListDevices)
-	api.Get("/devices/:id", deviceHandler.GetDevice)
-	api.Post("/firmware/upload", firmwareHandler.Upload)
-	api.Get("/firmware", firmwareHandler.List)
-	api.Get("/firmware/:id/url", firmwareHandler.GetDownloadURL)
-	api.Patch("/firmware/:id", firmwareHandler.Update)
-	api.Delete("/firmware/:id", firmwareHandler.Delete)
-	api.Post("/firmware/resign", firmwareHandler.ResignAll)
-	api.Post("/deployments", deploymentHandler.CreateDeployment)
-	api.Get("/deployments", deploymentHandler.ListDeployments)
-	api.Get("/deployments/:id", deploymentHandler.GetDeployment)
-	api.Post("/deployments/:id/rollback", deploymentHandler.Rollback)
+
+	// Public Auth endpoints
+	authGroup := api.Group("/auth")
+	authGroup.Post("/login", loginLimiter, authHandler.Login)
+	authGroup.Post("/refresh", authHandler.Refresh)
+	authGroup.Post("/logout", authHandler.Logout)
+	authGroup.Get("/me", middleware.Authenticate(), authHandler.Me)
+
+	// Protected Application endpoints
+	protected := api.Group("", middleware.Authenticate())
+
+	// Fleet telemetry & firmware reads
+	protected.Get("/devices", deviceHandler.ListDevices)
+	protected.Get("/devices/:id", deviceHandler.GetDevice)
+	protected.Get("/firmware", firmwareHandler.List)
+	protected.Get("/firmware/:id/url", firmwareHandler.GetDownloadURL)
+	protected.Get("/deployments", deploymentHandler.ListDeployments)
+	protected.Get("/deployments/:id", deploymentHandler.GetDeployment)
+
+	// Mutations requiring operator or admin privileges
+	protected.Post("/firmware/upload", middleware.RequireRole("admin", "operator"), firmwareHandler.Upload)
+	protected.Patch("/firmware/:id", middleware.RequireRole("admin"), firmwareHandler.Update)
+	protected.Delete("/firmware/:id", middleware.RequireRole("admin"), firmwareHandler.Delete)
+	protected.Post("/firmware/resign", middleware.RequireRole("admin"), firmwareHandler.ResignAll)
+	protected.Post("/deployments", middleware.RequireRole("admin", "operator"), deploymentHandler.CreateDeployment)
+	protected.Post("/deployments/:id/rollback", middleware.RequireRole("admin", "operator"), deploymentHandler.Rollback)
 
 	app.Get("/metrics", metrics.Handler())
 

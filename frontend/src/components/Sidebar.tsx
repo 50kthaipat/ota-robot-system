@@ -2,12 +2,26 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bot, HardDriveDownload, Rocket, Activity, Radio, Cpu, ShieldCheck } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Bot,
+  HardDriveDownload,
+  Rocket,
+  Activity,
+  Radio,
+  Cpu,
+  ShieldCheck,
+  LogOut,
+  User as UserIcon,
+  LogIn,
+} from "lucide-react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [isBackendHealthy, setIsBackendHealthy] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -20,6 +34,16 @@ export const Sidebar = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Do not render sidebar on the login page
+  if (pathname === "/login") {
+    return null;
+  }
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
+
   const navItems = [
     { label: "Fleet Overview", href: "/", icon: Bot },
     { label: "Firmware Catalog", href: "/firmware", icon: HardDriveDownload },
@@ -28,7 +52,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-surface-1 border-r border-hairline flex flex-col justify-between p-4 min-h-screen select-none">
+    <aside className="w-64 bg-surface-1 border-r border-hairline flex flex-col justify-between p-4 min-h-screen select-none shrink-0">
       <div>
         {/* Brand Header */}
         <div className="flex items-center gap-3 px-2 py-4 mb-6 border-b border-hairline">
@@ -38,7 +62,9 @@ export const Sidebar = () => {
           <div>
             <h1 className="font-semibold text-sm tracking-tight text-ink flex items-center gap-1.5">
               ROBO-OTA
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-2 text-ink-subtle border border-hairline font-mono">v1.0</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-2 text-ink-subtle border border-hairline font-mono">
+                v1.0
+              </span>
             </h1>
             <p className="text-[11px] text-ink-subtle tracking-wide">Fleet Control Plane</p>
           </div>
@@ -69,34 +95,68 @@ export const Sidebar = () => {
         </nav>
       </div>
 
-      {/* System Status Footer */}
-      <div className="p-3 rounded-lg bg-surface-2 border border-hairline space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-ink-subtle flex items-center gap-1.5 text-[11px]">
-            <Radio className="w-3.5 h-3.5 text-ink-tertiary" />
-            Backend API
-          </span>
-          {isBackendHealthy === null ? (
-            <span className="text-ink-tertiary font-mono text-[10px]">Checking...</span>
-          ) : isBackendHealthy ? (
-            <span className="flex items-center gap-1 text-[11px] text-semantic-success font-medium font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-semantic-success animate-pulse"></span>
-              ONLINE
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-[11px] text-semantic-error font-medium font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-semantic-error"></span>
-              OFFLINE
-            </span>
-          )}
-        </div>
+      <div className="space-y-3">
+        {/* User Profile / Auth Status */}
+        {user ? (
+          <div className="p-2.5 rounded-lg bg-surface-2 border border-hairline flex items-center justify-between">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-7 h-7 rounded-md bg-primary/15 border border-primary/20 flex items-center justify-center text-primary font-mono text-xs font-semibold shrink-0">
+                {user.username.slice(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-ink truncate font-mono">{user.username}</p>
+                <span className="inline-block px-1.5 py-0.2 rounded bg-surface-3 text-ink-muted text-[9px] font-mono uppercase border border-hairline">
+                  {user.role}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Sign Out"
+              className="p-1.5 rounded text-ink-tertiary hover:text-semantic-error hover:bg-surface-3 transition"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-xs font-medium transition font-mono"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            Sign In →
+          </Link>
+        )}
 
-        <div className="flex items-center justify-between text-xs pt-1 border-t border-hairline">
-          <span className="text-ink-subtle flex items-center gap-1.5 text-[11px]">
-            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-            Cluster
-          </span>
-          <span className="text-ink-muted font-mono text-[11px]">factory-cloud</span>
+        {/* System Status Footer */}
+        <div className="p-3 rounded-lg bg-surface-2 border border-hairline space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-ink-subtle flex items-center gap-1.5 text-[11px]">
+              <Radio className="w-3.5 h-3.5 text-ink-tertiary" />
+              Backend API
+            </span>
+            {isBackendHealthy === null ? (
+              <span className="text-ink-tertiary font-mono text-[10px]">Checking...</span>
+            ) : isBackendHealthy ? (
+              <span className="flex items-center gap-1 text-[11px] text-semantic-success font-medium font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-semantic-success animate-pulse"></span>
+                ONLINE
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[11px] text-semantic-error font-medium font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-semantic-error"></span>
+                OFFLINE
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between text-xs pt-1 border-t border-hairline">
+            <span className="text-ink-subtle flex items-center gap-1.5 text-[11px]">
+              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+              Cluster
+            </span>
+            <span className="text-ink-muted font-mono text-[11px]">factory-cloud</span>
+          </div>
         </div>
       </div>
     </aside>

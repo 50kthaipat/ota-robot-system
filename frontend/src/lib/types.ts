@@ -58,7 +58,20 @@ export interface DeploymentDevice {
 
 export interface CreateDeploymentPayload {
   firmware_id: string;
-  strategy?: string;
+  strategy?: "full" | "canary";
+  hw_model?: string;
   device_ids?: string[];
   rollback_threshold?: number;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email?: string;
+  role: "admin" | "operator" | "viewer";
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
 }

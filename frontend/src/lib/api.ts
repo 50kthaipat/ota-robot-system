@@ -1,4 +1,12 @@
-import { Device, FirmwareVersion, Deployment, DeploymentDevice, CreateDeploymentPayload } from "./types";
+import {
+  Device,
+  FirmwareVersion,
+  Deployment,
+  DeploymentDevice,
+  CreateDeploymentPayload,
+  User,
+  AuthResponse,
+} from "./types";
 
 const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
@@ -9,15 +17,51 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
-async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
+let inMemoryToken: string | null = null;
+
+export const setAccessToken = (token: string | null) => {
+  inMemoryToken = token;
+};
+
+export const getAccessToken = () => inMemoryToken;
+
+async function fetchJSON<T>(url: string, init?: RequestInit, retry = true): Promise<T> {
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+    ...(init?.headers as Record<string, string> || {}),
+  };
+
+  if (inMemoryToken && !headers["Authorization"]) {
+    headers["Authorization"] = `Bearer ${inMemoryToken}`;
+  }
+
   const res = await fetch(`${BASE_URL}${url}`, {
     ...init,
-    headers: {
-      "Accept": "application/json",
-      ...(init?.headers || {}),
-    },
+    headers,
+    credentials: "include",
     cache: "no-store",
   });
+
+  // Handle 401 Unauthorized by attempting silent token refresh
+  if (res.status === 401 && retry && !url.includes("/api/v1/auth/")) {
+    try {
+      const refreshRes = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (refreshRes.ok) {
+        const data: AuthResponse = await refreshRes.json();
+        setAccessToken(data.token);
+        return fetchJSON<T>(url, init, false);
+      } else {
+        setAccessToken(null);
+      }
+    } catch {
+      setAccessToken(null);
+    }
+  }
 
   if (!res.ok) {
     let errMsg = `Request failed: ${res.status} ${res.statusText}`;
@@ -34,6 +78,9 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getAccessToken,
+  setAccessToken,
+
   async getHealth(): Promise<boolean> {
     try {
       const res = await fetch(`${BASE_URL}/health`, { cache: "no-store" });
@@ -43,6 +90,40 @@ export const api = {
     }
   },
 
+  // Auth methods
+  async login(payload: { username: string; password: string }): Promise<AuthResponse> {
+    const res = await fetchJSON<AuthResponse>("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setAccessToken(res.token);
+    return res;
+  },
+
+  async refresh(): Promise<AuthResponse> {
+    const res = await fetchJSON<AuthResponse>("/api/v1/auth/refresh", {
+      method: "POST",
+    });
+    setAccessToken(res.token);
+    return res;
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await fetchJSON("/api/v1/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      setAccessToken(null);
+    }
+  },
+
+  async getMe(): Promise<{ user: User }> {
+    return fetchJSON<{ user: User }>("/api/v1/auth/me");
+  },
+
+  // Fleet & Devices
   async getDevices(): Promise<{ data: Device[]; total: number }> {
     return fetchJSON<{ data: Device[]; total: number }>("/api/v1/devices");
   },
@@ -51,15 +132,24 @@ export const api = {
     return fetchJSON<Device>(`/api/v1/devices/${id}`);
   },
 
+  // Firmware management
   async getFirmwares(): Promise<{ data: FirmwareVersion[] }> {
     return fetchJSON<{ data: FirmwareVersion[] }>("/api/v1/firmware");
   },
 
   async uploadFirmware(formData: FormData): Promise<FirmwareVersion> {
+    const headers: Record<string, string> = {};
+    if (inMemoryToken) {
+      headers["Authorization"] = `Bearer ${inMemoryToken}`;
+    }
+
     const res = await fetch(`${BASE_URL}/api/v1/firmware/upload`, {
       method: "POST",
+      headers,
+      credentials: "include",
       body: formData,
     });
+
     if (!res.ok) {
       let msg = "Upload failed";
       try {
@@ -89,6 +179,7 @@ export const api = {
     });
   },
 
+  // Deployments
   async getDeployments(): Promise<{ data: Deployment[] }> {
     return fetchJSON<{ data: Deployment[] }>("/api/v1/deployments");
   },
