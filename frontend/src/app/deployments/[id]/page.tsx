@@ -38,6 +38,8 @@ export default function DeploymentDetailPage() {
   const [isRollingBack, setIsRollingBack] = useState<boolean>(false);
   const [isRollbackModalOpen, setIsRollbackModalOpen] = useState<boolean>(false);
   const [rollbackMsg, setRollbackMsg] = useState<string | null>(null);
+  const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
+  const completionNotifiedRef = React.useRef<boolean>(false);
 
   const loadData = async () => {
     if (!id) return;
@@ -62,6 +64,35 @@ export default function DeploymentDetailPage() {
     }, 2000);
     return () => clearInterval(timer);
   }, [id]);
+
+  // Trigger notification and completion dialog when rollout hits 100% or finishes
+  useEffect(() => {
+    if (!deployment) return;
+    const completedCount = deployment.success_count + deployment.failure_count;
+    const isFinished =
+      (deployment.total_devices > 0 && completedCount >= deployment.total_devices) ||
+      deployment.status === "completed";
+
+    if (isFinished && !completionNotifiedRef.current) {
+      completionNotifiedRef.current = true;
+      if (deployment.status === "completed" || deployment.failure_count === 0) {
+        showToast(
+          "Rollout Completed Successfully",
+          `All ${deployment.total_devices} robot units have finished firmware upgrade (100%)`,
+          "success",
+          6000
+        );
+      } else {
+        showToast(
+          "Rollout Finished with Failures",
+          `${deployment.success_count} succeeded, ${deployment.failure_count} failed out of ${deployment.total_devices} units`,
+          "warning",
+          6000
+        );
+      }
+      setShowCompletionModal(true);
+    }
+  }, [deployment, showToast]);
 
   const paginatedDevices = useMemo(() => {
     return devices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -382,6 +413,59 @@ export default function DeploymentDetailPage() {
         targetDevicesCount={deployment.total_devices || devices.length}
         targetVersion={targetVersion}
       />
+
+      {/* Rollout Completion Action Dialog */}
+      {showCompletionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl border border-hairline-strong bg-surface-1 shadow-2xl p-6 space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-semantic-success/15 border border-semantic-success/30 text-semantic-success flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold text-ink">
+                Rollout Completed Successfully
+              </h3>
+              <p className="text-xs text-ink-subtle">
+                Target firmware <span className="font-mono text-primary font-semibold">v{targetVersion || deployment.firmware_version || "Target"}</span> has been deployed and verified across {deployment.total_devices} robot units.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 bg-surface-2/60 p-3 rounded-xl border border-hairline text-left">
+              <div>
+                <p className="text-[10px] uppercase font-mono tracking-wider text-ink-tertiary">Success Count</p>
+                <p className="font-mono font-bold text-semantic-success text-sm mt-0.5">
+                  {deployment.success_count} / {deployment.total_devices} Units
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-mono tracking-wider text-ink-tertiary">Strategy</p>
+                <p className="font-mono font-bold text-ink text-sm mt-0.5 uppercase">
+                  {deployment.strategy}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCompletionModal(false)}
+                className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
+              >
+                Stay on this Page
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="w-full py-2.5 px-3 rounded-xl text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors shadow-sm flex items-center justify-center gap-1.5"
+              >
+                <Bot className="w-4 h-4" />
+                Fleet Overview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
