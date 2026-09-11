@@ -20,11 +20,14 @@ import { api } from "@/lib/api";
 import { Deployment, DeploymentDevice } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Pagination } from "@/components/Pagination";
+import { useToast } from "@/context/ToastContext";
+import { RollbackRiskModal } from "@/components/RollbackRiskModal";
 
 export default function DeploymentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
+  const { showToast } = useToast();
 
   const [deployment, setDeployment] = useState<Deployment | null>(null);
   const [devices, setDevices] = useState<DeploymentDevice[]>([]);
@@ -33,6 +36,7 @@ export default function DeploymentDetailPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [isRollingBack, setIsRollingBack] = useState<boolean>(false);
+  const [isRollbackModalOpen, setIsRollbackModalOpen] = useState<boolean>(false);
   const [rollbackMsg, setRollbackMsg] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -63,17 +67,25 @@ export default function DeploymentDetailPage() {
     return devices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   }, [devices, currentPage, pageSize]);
 
-  const handleRollback = async () => {
-    if (!confirm("Are you sure you want to trigger an EMERGENCY ROLLBACK? This will command all target units to revert to their previous firmware.")) {
-      return;
-    }
+  const handleOpenRollbackModal = () => {
+    setIsRollbackModalOpen(true);
+  };
+
+  const handleConfirmRollback = async () => {
     setIsRollingBack(true);
     try {
       await api.rollbackDeployment(id);
+      setIsRollbackModalOpen(false);
       setRollbackMsg("Rollback command dispatched to all fleet units!");
+      showToast(
+        "Emergency Rollback Dispatched",
+        `MQTT emergency rollback signal transmitted to all ${deployment?.total_devices || devices.length} units`,
+        "success"
+      );
       await loadData();
     } catch (err: any) {
-      alert("Rollback failed: " + (err.message || "Unknown error"));
+      const errMsg = err.message || "Unknown error";
+      showToast("Rollback Failed", errMsg, "error");
     } finally {
       setIsRollingBack(false);
     }
@@ -135,7 +147,7 @@ export default function DeploymentDetailPage() {
 
         {deployment.status !== "rolled_back" && (
           <button
-            onClick={handleRollback}
+            onClick={handleOpenRollbackModal}
             disabled={isRollingBack}
             className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-semantic-error/10 hover:bg-semantic-error/20 active:bg-semantic-error/30 text-semantic-error border border-semantic-error/20 transition disabled:opacity-50"
           >
@@ -359,6 +371,17 @@ export default function DeploymentDetailPage() {
           />
         )}
       </div>
+
+      {/* Emergency Rollback Risk Assessment Modal */}
+      <RollbackRiskModal
+        isOpen={isRollbackModalOpen}
+        onClose={() => setIsRollbackModalOpen(false)}
+        onConfirm={handleConfirmRollback}
+        isRollingBack={isRollingBack}
+        deploymentId={deployment.id}
+        targetDevicesCount={deployment.total_devices || devices.length}
+        targetVersion={targetVersion}
+      />
     </div>
   );
 }

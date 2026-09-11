@@ -16,10 +16,13 @@ import {
 import { api } from "@/lib/api";
 import { Device, FirmwareVersion } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useToast } from "@/context/ToastContext";
+import { DeployRiskModal } from "@/components/DeployRiskModal";
 
 function DeployForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
   const preselectedFw = searchParams.get("firmware");
   const preselectedDevice = searchParams.get("device");
 
@@ -33,6 +36,7 @@ function DeployForm() {
   const [rollbackThreshold, setRollbackThreshold] = useState<number>(20);
   const [loading, setLoading] = useState<boolean>(true);
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
+  const [isRiskModalOpen, setIsRiskModalOpen] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -106,15 +110,24 @@ function DeployForm() {
     }
   };
 
-  const handleLaunch = async () => {
+  const handleOpenRiskModal = () => {
     if (!selectedFwId) {
       setError("Please select a target firmware version.");
+      showToast("Target Firmware Missing", "Please select a target firmware version before deploying.", "warning");
       return;
     }
     if (targetDevices.length === 0) {
       setError("No eligible online devices selected for deployment.");
+      showToast("No Target Units", "No eligible online robots selected in current fleet scope.", "warning");
       return;
     }
+
+    setError(null);
+    setIsRiskModalOpen(true);
+  };
+
+  const handleConfirmLaunch = async () => {
+    if (!selectedFwId || targetDevices.length === 0) return;
 
     setIsLaunching(true);
     setError(null);
@@ -128,9 +141,17 @@ function DeployForm() {
       };
 
       const res = await api.createDeployment(payload);
+      setIsRiskModalOpen(false);
+      showToast(
+        "OTA Deployment Initiated",
+        `Rollout command dispatched for v${selectedFw?.version || ""} across ${targetDevices.length} robot nodes`,
+        "success"
+      );
       router.push(`/deployments/${res.id}`);
     } catch (err: any) {
-      setError(err.message || "Failed to trigger deployment.");
+      const errMsg = err.message || "Failed to trigger deployment.";
+      setError(errMsg);
+      showToast("Deployment Failed", errMsg, "error");
       setIsLaunching(false);
     }
   };
@@ -397,7 +418,7 @@ function DeployForm() {
         </div>
 
         <button
-          onClick={handleLaunch}
+          onClick={handleOpenRiskModal}
           disabled={isLaunching || targetDevices.length === 0 || !selectedFwId}
           className="flex items-center gap-2 px-5 py-2.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
@@ -414,6 +435,20 @@ function DeployForm() {
           )}
         </button>
       </div>
+
+      {/* Pre-Rollout Operational Risk Modal */}
+      <DeployRiskModal
+        isOpen={isRiskModalOpen}
+        onClose={() => setIsRiskModalOpen(false)}
+        onConfirm={handleConfirmLaunch}
+        isLaunching={isLaunching}
+        firmware={selectedFw}
+        targetDevicesCount={targetDevices.length}
+        targetScope={targetScope}
+        selectedFactory={selectedFactory}
+        strategy={strategy}
+        rollbackThreshold={rollbackThreshold}
+      />
     </div>
   );
 }

@@ -20,8 +20,10 @@ import {
 import { api } from "@/lib/api";
 import { FirmwareVersion } from "@/lib/types";
 import { Pagination } from "@/components/Pagination";
+import { useToast } from "@/context/ToastContext";
 
 export default function FirmwarePage() {
+  const { showToast } = useToast();
   const [firmwares, setFirmwares] = useState<FirmwareVersion[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -58,6 +60,7 @@ export default function FirmwarePage() {
     if (!editingFw) return;
     if (!editVersion.trim()) {
       setUpdateError("Version tag is required");
+      showToast("Validation Error", "Version tag cannot be empty", "warning");
       return;
     }
     setIsUpdating(true);
@@ -68,10 +71,13 @@ export default function FirmwarePage() {
         release_notes: editNotes.trim(),
       });
       setUploadSuccess(`Firmware v${editVersion} updated successfully`);
+      showToast("Firmware Updated", `Firmware v${editVersion} release metadata saved successfully`, "success");
       setEditingFw(null);
       await loadFirmwares();
     } catch (err: any) {
-      setUpdateError(err.message || "Failed to update firmware");
+      const msg = err.message || "Failed to update firmware";
+      setUpdateError(msg);
+      showToast("Update Failed", msg, "error");
     } finally {
       setIsUpdating(false);
     }
@@ -84,10 +90,13 @@ export default function FirmwarePage() {
     try {
       await api.deleteFirmware(deletingFw.id);
       setUploadSuccess(`Firmware v${deletingFw.version} deleted successfully`);
+      showToast("Firmware Deleted", `Firmware release v${deletingFw.version} removed from active catalog`, "success");
       setDeletingFw(null);
       await loadFirmwares();
     } catch (err: any) {
-      setDeleteError(err.message || "Failed to delete firmware");
+      const msg = err.message || "Failed to delete firmware";
+      setDeleteError(msg);
+      showToast("Deletion Failed", msg, "error");
     } finally {
       setIsDeleting(false);
     }
@@ -128,11 +137,15 @@ export default function FirmwarePage() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setUploadError("Please select a .bin firmware file");
+      const msg = "Please select a firmware file (.bin, .hex, .tar.gz, .img)";
+      setUploadError(msg);
+      showToast("Upload Error", msg, "warning");
       return;
     }
     if (!version.trim()) {
-      setUploadError("Version string is required (e.g. 1.2.0)");
+      const msg = "Version string is required (e.g. 1.2.0)";
+      setUploadError(msg);
+      showToast("Upload Error", msg, "warning");
       return;
     }
 
@@ -147,7 +160,9 @@ export default function FirmwarePage() {
       formData.append("release_notes", releaseNotes.trim());
 
       await api.uploadFirmware(formData);
-      setUploadSuccess(`Firmware v${version} successfully uploaded and registered!`);
+      const successMsg = `Firmware v${version} uploaded, verified, and signed with ECDSA NIST P-256!`;
+      setUploadSuccess(successMsg);
+      showToast("Firmware Uploaded & Signed", successMsg, "success");
       setFile(null);
       setVersion("");
       setReleaseNotes("");
@@ -158,6 +173,7 @@ export default function FirmwarePage() {
         msg = "Network error (Failed to fetch). Please check connection or ensure backend is awake.";
       }
       setUploadError(msg);
+      showToast("Upload Failed", msg, "error");
     } finally {
       setIsUploading(false);
     }
@@ -166,6 +182,7 @@ export default function FirmwarePage() {
   const handleCopyChecksum = (checksum: string, id: string) => {
     navigator.clipboard.writeText(checksum);
     setCopiedId(id);
+    showToast("Checksum Copied", `SHA-256 digest (${checksum.slice(0, 16)}...) copied to clipboard`, "info", 2500);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
