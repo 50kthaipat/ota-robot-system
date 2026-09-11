@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -19,6 +19,7 @@ import {
 import { api } from "@/lib/api";
 import { Deployment, DeploymentDevice } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Pagination } from "@/components/Pagination";
 
 export default function DeploymentDetailPage() {
   const params = useParams();
@@ -29,6 +30,8 @@ export default function DeploymentDetailPage() {
   const [devices, setDevices] = useState<DeploymentDevice[]>([]);
   const [targetVersion, setTargetVersion] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [isRollingBack, setIsRollingBack] = useState<boolean>(false);
   const [rollbackMsg, setRollbackMsg] = useState<string | null>(null);
 
@@ -55,6 +58,10 @@ export default function DeploymentDetailPage() {
     }, 2000);
     return () => clearInterval(timer);
   }, [id]);
+
+  const paginatedDevices = useMemo(() => {
+    return devices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [devices, currentPage, pageSize]);
 
   const handleRollback = async () => {
     if (!confirm("Are you sure you want to trigger an EMERGENCY ROLLBACK? This will command all target units to revert to their previous firmware.")) {
@@ -288,7 +295,7 @@ export default function DeploymentDetailPage() {
                   </td>
                 </tr>
               ) : (
-                devices.map((d) => (
+                paginatedDevices.map((d) => (
                   <tr key={d.id} className="hover:bg-surface-2/40 transition">
                     <td className="px-5 py-3.5 font-medium text-ink flex items-center gap-2">
                       <Bot className="w-4 h-4 text-ink-muted" />
@@ -340,6 +347,17 @@ export default function DeploymentDetailPage() {
             </tbody>
           </table>
         </div>
+
+        {devices.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={devices.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        )}
       </div>
     </div>
   );

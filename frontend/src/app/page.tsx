@@ -7,12 +7,15 @@ import { api } from "@/lib/api";
 import { Device } from "@/lib/types";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Pagination } from "@/components/Pagination";
 
 export default function FleetOverviewPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>("");
   const [factoryFilter, setFactoryFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -54,6 +57,15 @@ export default function FleetOverviewPage() {
       return matchesSearch && matchesFactory;
     });
   }, [devices, search, factoryFilter]);
+
+  // Reset pagination to page 1 on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, factoryFilter]);
+
+  const paginatedDevices = useMemo(() => {
+    return filteredDevices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredDevices, currentPage, pageSize]);
 
   const stats = useMemo(() => {
     const total = devices.length;
@@ -200,7 +212,7 @@ export default function FleetOverviewPage() {
                   </td>
                 </tr>
               ) : (
-                filteredDevices.map((device) => (
+                paginatedDevices.map((device) => (
                   <tr key={device.id} className="hover:bg-surface-2/60 transition-colors">
                     <td className="px-6 py-3.5 font-medium text-ink flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
@@ -233,6 +245,17 @@ export default function FleetOverviewPage() {
             </tbody>
           </table>
         </div>
+
+        {filteredDevices.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filteredDevices.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        )}
       </div>
     </div>
   );

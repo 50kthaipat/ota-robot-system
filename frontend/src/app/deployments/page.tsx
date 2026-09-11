@@ -6,10 +6,13 @@ import { Activity, RefreshCw, Rocket, Eye, CheckCircle2, Clock } from "lucide-re
 import { api } from "@/lib/api";
 import { Deployment } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Pagination } from "@/components/Pagination";
 
 export default function DeploymentsHistoryPage() {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const loadDeployments = async () => {
     try {
@@ -29,6 +32,11 @@ export default function DeploymentsHistoryPage() {
     }, 3000);
     return () => clearInterval(timer);
   }, []);
+
+  const paginatedDeployments = deployments.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   return (
     <div className="p-8 max-w-7xl w-full mx-auto space-y-6">
@@ -100,7 +108,7 @@ export default function DeploymentsHistoryPage() {
                   </td>
                 </tr>
               ) : (
-                deployments.map((d) => (
+                paginatedDeployments.map((d) => (
                   <tr key={d.id} className="hover:bg-surface-2/40 transition">
                     <td className="px-5 py-3.5 font-medium text-ink flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
@@ -143,6 +151,17 @@ export default function DeploymentsHistoryPage() {
             </tbody>
           </table>
         </div>
+
+        {deployments.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={deployments.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[5, 10, 20, 50]}
+          />
+        )}
       </div>
     </div>
   );

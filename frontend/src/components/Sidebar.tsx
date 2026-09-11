@@ -52,7 +52,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-surface-1 border-r border-hairline flex flex-col justify-between p-4 min-h-screen select-none shrink-0">
+    <aside className="w-64 h-screen bg-surface-1 border-r border-hairline flex flex-col justify-between p-4 select-none shrink-0 sticky top-0 overflow-y-auto z-20">
       <div>
         {/* Brand Header */}
         <div className="flex items-center gap-3 px-2 py-4 mb-6 border-b border-hairline">

@@ -15,10 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-canvas text-ink min-h-screen flex antialiased selection:bg-primary selection:text-white">
+      <body className="bg-canvas text-ink h-screen overflow-hidden flex antialiased selection:bg-primary selection:text-white">
         <AuthProvider>
           <Sidebar />
-          <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
+          <main className="flex-1 min-w-0 h-screen overflow-y-auto flex flex-col">
             {children}
           </main>
         </AuthProvider>

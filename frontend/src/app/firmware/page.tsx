@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
   HardDriveDownload,
@@ -19,10 +19,13 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { FirmwareVersion } from "@/lib/types";
+import { Pagination } from "@/components/Pagination";
 
 export default function FirmwarePage() {
   const [firmwares, setFirmwares] = useState<FirmwareVersion[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [file, setFile] = useState<File | null>(null);
   const [version, setVersion] = useState<string>("");
   const [releaseNotes, setReleaseNotes] = useState<string>("");
@@ -100,6 +103,10 @@ export default function FirmwarePage() {
       setLoading(false);
     }
   };
+
+  const paginatedFirmwares = useMemo(() => {
+    return firmwares.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [firmwares, currentPage, pageSize]);
 
   useEffect(() => {
     loadFirmwares();
@@ -338,7 +345,7 @@ export default function FirmwarePage() {
                   </td>
                 </tr>
               ) : (
-                firmwares.map((fw) => (
+                paginatedFirmwares.map((fw) => (
                   <tr key={fw.id} className="hover:bg-surface-2/60 transition-colors">
                     <td className="px-6 py-3.5">
                       <div className="font-semibold text-primary-hover flex items-center gap-2">
@@ -419,6 +426,17 @@ export default function FirmwarePage() {
             </tbody>
           </table>
         </div>
+
+        {firmwares.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={firmwares.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        )}
       </div>
 
       {/* Edit Firmware Modal */}
