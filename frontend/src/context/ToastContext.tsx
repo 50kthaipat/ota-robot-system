@@ -66,7 +66,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       {/* Top-Center Toast Container */}
       <div
-        aria-live="polite"
         className="fixed inset-x-0 top-5 z-[9999] flex flex-col items-center pointer-events-none px-4"
         style={{ left: 0, right: 0, top: "1.25rem" }}
       >
@@ -106,8 +105,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             return (
               <div
                 key={item.id}
-                role="status"
-                className={`pointer-events-auto w-full flex items-start gap-3 p-3.5 rounded-xl border ${typeConfig.border} ${typeConfig.bg} backdrop-blur-md shadow-2xl transition-all duration-300 transform translate-y-0 opacity-100 animate-in fade-in slide-in-from-top-3`}
+                role={item.type === "error" || item.type === "warning" ? "alert" : "status"}
+                aria-live={item.type === "error" || item.type === "warning" ? "assertive" : "polite"}
+                className={`pointer-events-auto w-full flex items-start gap-3 p-3.5 rounded-xl border ${typeConfig.border} ${typeConfig.bg} backdrop-blur-md shadow-2xl transition-[opacity,transform] duration-300 transform translate-y-0 opacity-100 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-3 motion-reduce:transition-none`}
               >
                 {typeConfig.icon}
                 <div className="flex-1 min-w-0">
@@ -115,7 +115,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     {item.title}
                   </p>
                   {item.message && (
-                    <p className="text-[11px] text-ink-subtle mt-0.5 leading-relaxed break-words font-sans">
+                    <p className="text-xs text-ink-subtle mt-0.5 leading-relaxed break-words font-sans">
                       {item.message}
                     </p>
                   )}
@@ -123,7 +123,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => removeToast(item.id)}
-                  className="text-ink-tertiary hover:text-ink p-0.5 rounded transition-colors shrink-0"
+                  className="flex min-h-11 min-w-11 items-center justify-center text-ink-tertiary hover:text-ink rounded transition-colors shrink-0"
                   aria-label="Close notification"
                 >
                   <X className="w-3.5 h-3.5" />

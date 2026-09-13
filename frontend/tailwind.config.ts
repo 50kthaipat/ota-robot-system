@@ -30,20 +30,23 @@ const config: Config = {
           tertiary: "#3e3e44",
         },
         primary: {
-          DEFAULT: "#5e6ad2",
-          hover: "#828fff",
-          focus: "#5e69d1",
+          DEFAULT: "#8a95ff",
+          hover: "#a5adff",
+          focus: "#727ee8",
           secure: "#7a7fad",
         },
         ink: {
           DEFAULT: "#f7f8f8",
           muted: "#d0d6e0",
           subtle: "#8a8f98",
-          tertiary: "#62666d",
+          tertiary: "#7f8590",
         },
         semantic: {
           success: "#27a644",
-          error: "#eb5757",
+          error: {
+            DEFAULT: "#f06b72",
+            strong: "#a9233b",
+          },
           warning: "#f2994a",
           secure: "#7a7fad",
         },

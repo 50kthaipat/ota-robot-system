@@ -28,6 +28,51 @@ func NewAuthHandler(pool *pgxpool.Pool) *AuthHandler {
 	}
 }
 
+const (
+	accessTokenCookieName  = "access_token"
+	refreshTokenCookieName = "refresh_token"
+)
+
+func authCookieSecure() bool {
+	return os.Getenv("COOKIE_INSECURE") != "true"
+}
+
+func setAuthCookies(c fiber.Ctx, accessToken, refreshToken string, refreshExpires time.Time) {
+	secure := authCookieSecure()
+	c.Cookie(&fiber.Cookie{
+		Name:     accessTokenCookieName,
+		Value:    accessToken,
+		Expires:  time.Now().Add(15 * time.Minute),
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: "Strict",
+		Path:     "/",
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:     refreshTokenCookieName,
+		Value:    refreshToken,
+		Expires:  refreshExpires,
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: "Strict",
+		Path:     "/",
+	})
+}
+
+func clearAuthCookies(c fiber.Ctx) {
+	for _, name := range []string{accessTokenCookieName, refreshTokenCookieName} {
+		c.Cookie(&fiber.Cookie{
+			Name:     name,
+			Value:    "",
+			Expires:  time.Unix(0, 0),
+			HTTPOnly: true,
+			Secure:   authCookieSecure(),
+			SameSite: "Strict",
+			Path:     "/",
+		})
+	}
+}
+
 // AutoMigrateAndSeed ensures auth tables exist and seeds a default admin if none exists
 func (h *AuthHandler) AutoMigrateAndSeed(ctx context.Context) error {
 	queries := []string{
@@ -194,23 +239,7 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 		})
 	}
 
-	sameSite := "None"
-	secure := true
-	if os.Getenv("COOKIE_INSECURE") == "true" {
-		sameSite = "Lax"
-		secure = false
-	}
-
-	// Set HttpOnly, Secure, SameSite=None cookie for cross-origin SPA (Vercel <-> Cloud API)
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    rawRefreshToken,
-		Expires:  expiresAt,
-		HTTPOnly: true,
-		Secure:   secure,
-		SameSite: sameSite,
-		Path:     "/",
-	})
+	setAuthCookies(c, accessToken, rawRefreshToken, expiresAt)
 
 	emailStr := ""
 	if user.Email.Valid {
@@ -218,8 +247,6 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"token":         accessToken,
-		"refresh_token": rawRefreshToken,
 		"user": UserResponse{
 			ID:       userIDStr,
 			Username: user.Username,
@@ -230,19 +257,7 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 }
 
 func (h *AuthHandler) Refresh(c fiber.Ctx) error {
-	rawToken := c.Cookies("refresh_token")
-	if rawToken == "" {
-		rawToken = c.Get("X-Refresh-Token")
-	}
-	if rawToken == "" {
-		var req struct {
-			RefreshToken string `json:"refresh_token"`
-		}
-		_ = c.Bind().Body(&req)
-		if req.RefreshToken != "" {
-			rawToken = req.RefreshToken
-		}
-	}
+	rawToken := c.Cookies(refreshTokenCookieName)
 
 	if rawToken == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -295,22 +310,7 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 
-	sameSite := "None"
-	secure := true
-	if os.Getenv("COOKIE_INSECURE") == "true" {
-		sameSite = "Lax"
-		secure = false
-	}
-
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    newRawRefresh,
-		Expires:  expiresAt,
-		HTTPOnly: true,
-		Secure:   secure,
-		SameSite: sameSite,
-		Path:     "/",
-	})
+	setAuthCookies(c, newAccessToken, newRawRefresh, expiresAt)
 
 	emailStr := ""
 	if user.Email.Valid {
@@ -318,8 +318,6 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"token":         newAccessToken,
-		"refresh_token": newRawRefresh,
 		"user": UserResponse{
 			ID:       userIDStr,
 			Username: user.Username,
@@ -330,22 +328,13 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 }
 
 func (h *AuthHandler) Logout(c fiber.Ctx) error {
-	rawToken := c.Cookies("refresh_token")
+	rawToken := c.Cookies(refreshTokenCookieName)
 	if rawToken != "" {
 		tokenHash := auth.HashRefreshToken(rawToken)
 		_ = h.queries.DeleteRefreshToken(c.Context(), tokenHash)
 	}
 
-	// Expire cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    "",
-		Expires:  time.Unix(0, 0),
-		HTTPOnly: true,
-		Secure:   os.Getenv("COOKIE_INSECURE") != "true",
-		SameSite: "Strict",
-		Path:     "/",
-	})
+	clearAuthCookies(c)
 
 	return c.JSON(fiber.Map{
 		"status":  "ok",

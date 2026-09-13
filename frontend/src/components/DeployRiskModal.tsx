@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ShieldAlert,
   AlertTriangle,
@@ -13,6 +13,7 @@ import {
   Rocket,
 } from "lucide-react";
 import { FirmwareVersion } from "@/lib/types";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 
 interface DeployRiskModalProps {
   isOpen: boolean;
@@ -40,6 +41,13 @@ export function DeployRiskModal({
   rollbackThreshold,
 }: DeployRiskModalProps) {
   const [acknowledged, setAcknowledged] = useState<boolean>(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isOpen) setAcknowledged(false);
+  }, [isOpen]);
+  useDialogFocus(isOpen, dialogRef, cancelRef, onClose, isLaunching);
 
   if (!isOpen || !firmware) return null;
 
@@ -57,8 +65,8 @@ export function DeployRiskModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-xl rounded-2xl border border-hairline-strong bg-surface-1 shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="deploy-risk-title" aria-describedby="deploy-risk-description" tabIndex={-1} className="flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col overflow-y-auto rounded-2xl border border-hairline-strong bg-surface-1 shadow-2xl outline-none">
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-hairline flex items-center justify-between bg-surface-2/50">
           <div className="flex items-center gap-2.5">
@@ -66,13 +74,13 @@ export function DeployRiskModal({
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <h3 id="deploy-risk-title" className="text-sm font-semibold text-ink flex items-center gap-2">
                 Pre-Rollout Risk Assessment
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
                   v{firmware.version}
                 </span>
               </h3>
-              <p className="text-[11px] text-ink-subtle">
+              <p id="deploy-risk-description" className="text-xs text-ink-subtle">
                 Review operational risks before broadcasting firmware to fleet.
               </p>
             </div>
@@ -81,7 +89,8 @@ export function DeployRiskModal({
             type="button"
             onClick={onClose}
             disabled={isLaunching}
-            className="text-ink-tertiary hover:text-ink p-1 rounded transition-colors disabled:opacity-40"
+            aria-label="Close risk assessment"
+            className="min-h-11 min-w-11 rounded p-2 text-ink-tertiary transition-colors hover:text-ink disabled:opacity-40"
           >
             <X className="w-4 h-4" />
           </button>
@@ -90,46 +99,46 @@ export function DeployRiskModal({
         {/* Content Body - Compact, No Vertical Scroll */}
         <div className="p-5 space-y-3.5 text-xs">
           {/* Target Specs 4-Col Grid */}
-          <div className="grid grid-cols-4 gap-2.5 bg-surface-2/60 p-3 rounded-xl border border-hairline">
+          <div className="grid grid-cols-2 gap-2.5 bg-surface-2/60 p-3 rounded-xl border border-hairline sm:grid-cols-4">
             <div>
-              <p className="text-[10px] uppercase font-mono tracking-wider text-ink-tertiary">Version</p>
+              <p className="text-xs uppercase font-mono tracking-wider text-ink-tertiary">Version</p>
               <p className="font-mono font-bold text-ink text-xs mt-0.5">v{firmware.version}</p>
-              <p className="text-[10px] text-ink-subtle">{formatBytes(firmware.file_size)}</p>
+              <p className="text-xs text-ink-subtle">{formatBytes(firmware.file_size)}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase font-mono tracking-wider text-ink-tertiary">Fleet Scope</p>
+              <p className="text-xs uppercase font-mono tracking-wider text-ink-tertiary">Fleet Scope</p>
               <p className="font-mono font-bold text-primary text-xs mt-0.5">{targetDevicesCount} Units</p>
-              <p className="text-[10px] text-ink-subtle truncate">
+              <p className="text-xs text-ink-subtle truncate">
                 {targetScope === "all" ? "All Online" : targetScope === "factory" ? selectedFactory : "Custom List"}
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase font-mono tracking-wider text-ink-tertiary">Strategy</p>
+              <p className="text-xs uppercase font-mono tracking-wider text-ink-tertiary">Strategy</p>
               <p className="font-mono font-bold text-ink text-xs mt-0.5 uppercase">{strategy}</p>
-              <p className="text-[10px] text-ink-subtle">
+              <p className="text-xs text-ink-subtle">
                 {strategy === "canary" ? "Phased 20-100%" : "Direct Full"}
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase font-mono tracking-wider text-ink-tertiary">Abort Limit</p>
+              <p className="text-xs uppercase font-mono tracking-wider text-ink-tertiary">Abort Limit</p>
               <p className="font-mono font-bold text-semantic-warning text-xs mt-0.5">{rollbackThreshold}%</p>
-              <p className="text-[10px] text-ink-subtle">Auto-rollback</p>
+              <p className="text-xs text-ink-subtle">Auto-rollback</p>
             </div>
           </div>
 
           {/* Operational Risk Matrix - 2x2 Compact Grid */}
           <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted font-mono flex items-center gap-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted font-mono flex items-center gap-1.5">
               <AlertTriangle className="w-3 h-3 text-semantic-warning" />
               Operational Impact & Hazards
             </p>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="p-2.5 rounded-lg border border-hairline bg-surface-2/40 flex items-start gap-2">
                 <Cpu className="w-3.5 h-3.5 text-semantic-warning shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-ink text-[11px]">Fleet Flashing & Reboot</p>
-                  <p className="text-ink-subtle text-[10px] leading-tight mt-0.5">
+                  <p className="font-medium text-ink text-xs">Fleet Flashing & Reboot</p>
+                  <p className="text-ink-subtle text-xs leading-relaxed mt-0.5">
                     Target units suspend tasks, flash secondary slot, and reboot.
                   </p>
                 </div>
@@ -138,8 +147,8 @@ export function DeployRiskModal({
               <div className="p-2.5 rounded-lg border border-hairline bg-surface-2/40 flex items-start gap-2">
                 <Wifi className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-ink text-[11px]">Network Bandwidth Peak</p>
-                  <p className="text-ink-subtle text-[10px] leading-tight mt-0.5">
+                  <p className="font-medium text-ink text-xs">Network Bandwidth Peak</p>
+                  <p className="text-ink-subtle text-xs leading-relaxed mt-0.5">
                     Parallel binary transfer across factory wireless access points.
                   </p>
                 </div>
@@ -148,8 +157,8 @@ export function DeployRiskModal({
               <div className="p-2.5 rounded-lg border border-hairline bg-surface-2/40 flex items-start gap-2">
                 <BatteryCharging className="w-3.5 h-3.5 text-semantic-success shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-ink text-[11px]">Battery Safety Interlock</p>
-                  <p className="text-ink-subtle text-[10px] leading-tight mt-0.5">
+                  <p className="font-medium text-ink text-xs">Battery Safety Interlock</p>
+                  <p className="text-ink-subtle text-xs leading-relaxed mt-0.5">
                     Units below 30% hold until docked on charging station.
                   </p>
                 </div>
@@ -158,8 +167,8 @@ export function DeployRiskModal({
               <div className="p-2.5 rounded-lg border border-hairline bg-surface-2/40 flex items-start gap-2">
                 <ShieldAlert className="w-3.5 h-3.5 text-semantic-warning shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-ink text-[11px]">Canary Auto-Abort</p>
-                  <p className="text-ink-subtle text-[10px] leading-tight mt-0.5">
+                  <p className="font-medium text-ink text-xs">Canary Auto-Abort</p>
+                  <p className="text-ink-subtle text-xs leading-relaxed mt-0.5">
                     Rollout aborts if failure rate exceeds {rollbackThreshold}%.
                   </p>
                 </div>
@@ -168,7 +177,7 @@ export function DeployRiskModal({
           </div>
 
           {/* Cryptographic Verification Badge */}
-          <div className="px-3 py-1.5 rounded-lg bg-surface-2 border border-hairline flex items-center justify-between font-mono text-[10px]">
+          <div className="px-3 py-2 rounded-lg bg-surface-2 border border-hairline flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
             <span className="text-ink-subtle">SHA256: {firmware.sha256_checksum.slice(0, 20)}...</span>
             <span className="text-semantic-success flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> NIST P-256 Signed
@@ -176,14 +185,14 @@ export function DeployRiskModal({
           </div>
 
           {/* English Checkbox */}
-          <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-primary/30 bg-primary/5 cursor-pointer select-none">
+          <label className="flex min-h-11 items-center gap-2.5 p-2.5 rounded-xl border border-primary/30 bg-primary/5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={acknowledged}
               onChange={(e) => setAcknowledged(e.target.checked)}
               className="rounded bg-surface-2 border-hairline text-primary focus:ring-0 w-4 h-4 cursor-pointer accent-primary shrink-0"
             />
-            <span className="text-[11px] font-medium text-ink leading-tight">
+            <span className="text-xs font-medium text-ink leading-relaxed">
               I understand the operational impact and authorize OTA rollout across {targetDevicesCount} robot units.
             </span>
           </label>
@@ -192,10 +201,11 @@ export function DeployRiskModal({
         {/* Footer */}
         <div className="px-5 py-3 border-t border-hairline bg-surface-2/40 flex items-center justify-end gap-2.5">
           <button
+            ref={cancelRef}
             type="button"
             onClick={onClose}
             disabled={isLaunching}
-            className="px-3.5 py-1.5 text-xs font-medium rounded-lg text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors disabled:opacity-50"
+            className="min-h-11 px-3.5 py-2 text-xs font-medium rounded-lg text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -203,11 +213,11 @@ export function DeployRiskModal({
             type="button"
             onClick={handleConfirm}
             disabled={!acknowledged || isLaunching}
-            className="flex items-center gap-2 px-4 py-1.5 text-xs font-medium rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+            className="flex min-h-11 items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg bg-primary hover:bg-primary-hover active:bg-primary-focus text-surface-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
           >
             {isLaunching ? (
               <>
-                <RefreshCw className="w-3 h-3 animate-spin" />
+                <RefreshCw className="w-3 h-3 motion-safe:animate-spin" />
                 Broadcasting...
               </>
             ) : (

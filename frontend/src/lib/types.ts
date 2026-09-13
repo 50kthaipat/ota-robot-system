@@ -1,3 +1,14 @@
+export interface DeviceTelemetry {
+  battery_level?: number;
+  is_charging?: boolean;
+  network_rssi?: number;
+  network_bandwidth?: string;
+  activity?: string;
+  power_mode?: string;
+  fsm_state?: string;
+  [key: string]: unknown;
+}
+
 export interface Device {
   id: string;
   name: string;
@@ -7,8 +18,33 @@ export interface Device {
   status: "online" | "offline" | "updating" | "error";
   last_seen: string | null;
   ip_address: string | null;
+  metadata?: DeviceTelemetry | string | null;
   created_at: string;
   updated_at: string;
+}
+
+export function parseDeviceTelemetry(metadata: unknown): DeviceTelemetry | null {
+  if (!metadata) return null;
+  if (typeof metadata === "object") return metadata as DeviceTelemetry;
+  if (typeof metadata === "string") {
+    try {
+      const trimmed = metadata.trim();
+      if (trimmed.startsWith("{")) {
+        return JSON.parse(trimmed);
+      }
+      const decoded = atob(trimmed);
+      return JSON.parse(decoded);
+    } catch {
+      try {
+        return JSON.parse(metadata);
+      } catch {}
+    }
+  }
+  return null;
+}
+
+export function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 export interface FirmwareVersion {
@@ -72,7 +108,5 @@ export interface User {
 }
 
 export interface AuthResponse {
-  token: string;
-  refresh_token?: string;
   user: User;
 }

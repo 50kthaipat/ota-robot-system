@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -11,17 +11,18 @@ import {
   AlertOctagon,
   RefreshCw,
   RotateCcw,
-  Clock,
   Check,
   ShieldCheck,
   AlertTriangle,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { Deployment, DeploymentDevice } from "@/lib/types";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
+import { Deployment, DeploymentDevice, getErrorMessage } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/context/ToastContext";
 import { RollbackRiskModal } from "@/components/RollbackRiskModal";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 
 export default function DeploymentDetailPage() {
   const params = useParams();
@@ -39,9 +40,14 @@ export default function DeploymentDetailPage() {
   const [isRollbackModalOpen, setIsRollbackModalOpen] = useState<boolean>(false);
   const [rollbackMsg, setRollbackMsg] = useState<string | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const completionNotifiedRef = React.useRef<boolean>(false);
+  const completionDialogRef = React.useRef<HTMLDivElement>(null);
+  const completionCloseRef = React.useRef<HTMLButtonElement>(null);
+  const closeCompletion = useCallback(() => setShowCompletionModal(false), []);
+  useDialogFocus(showCompletionModal, completionDialogRef, completionCloseRef, closeCompletion);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!id) return;
     try {
       const res = await api.getDeployment(id);
@@ -50,20 +56,19 @@ export default function DeploymentDetailPage() {
       if (res.target_version) {
         setTargetVersion(res.target_version);
       }
-    } catch (err) {
-      console.error("Failed to load deployment details", err);
+      setLoadError(null);
+    } catch {
+      setLoadError("Live rollout telemetry is unavailable. Displayed progress may be stale.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     loadData();
-    const timer = setInterval(() => {
-      loadData();
-    }, 2000);
-    return () => clearInterval(timer);
-  }, [id]);
+  }, [loadData]);
+
+  useVisibilityPolling(loadData, 10000);
 
   // Trigger notification and completion dialog when rollout hits 100% or finishes
   useEffect(() => {
@@ -114,8 +119,8 @@ export default function DeploymentDetailPage() {
         "success"
       );
       await loadData();
-    } catch (err: any) {
-      const errMsg = err.message || "Unknown error";
+    } catch (err: unknown) {
+      const errMsg = getErrorMessage(err, "Unknown error");
       showToast("Rollback Failed", errMsg, "error");
     } finally {
       setIsRollingBack(false);
@@ -125,7 +130,7 @@ export default function DeploymentDetailPage() {
   if (loading && !deployment) {
     return (
       <div className="p-12 text-center text-ink-muted">
-        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-primary mb-3" />
+        <RefreshCw className="w-6 h-6 motion-safe:animate-spin mx-auto text-primary mb-3" />
         Connecting to rollout telemetry stream...
       </div>
     );
@@ -152,7 +157,7 @@ export default function DeploymentDetailPage() {
       : 0;
 
   return (
-    <div className="p-8 max-w-6xl w-full mx-auto space-y-6">
+    <div className="w-full max-w-6xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <Link
@@ -182,11 +187,18 @@ export default function DeploymentDetailPage() {
             disabled={isRollingBack}
             className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-semantic-error/10 hover:bg-semantic-error/20 active:bg-semantic-error/30 text-semantic-error border border-semantic-error/20 transition disabled:opacity-50"
           >
-            <RotateCcw className={`w-3.5 h-3.5 ${isRollingBack ? "animate-spin" : ""}`} />
+            <RotateCcw className={`w-3.5 h-3.5 ${isRollingBack ? "motion-safe:animate-spin" : ""}`} />
             {isRollingBack ? "Aborting & Rolling Back..." : "Trigger Emergency Rollback"}
           </button>
         )}
       </div>
+
+      {loadError && (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-semantic-warning/30 bg-semantic-warning/10 p-4 text-xs text-semantic-warning sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />{loadError}</span>
+          <button type="button" onClick={() => void loadData()} className="min-h-11 rounded-lg border border-semantic-warning/30 px-3 font-medium hover:bg-semantic-warning/10">Retry now</button>
+        </div>
+      )}
 
       {deployment.status === "rolled_back" && (
         <div className="p-4 rounded-lg bg-semantic-error/10 border border-semantic-error/20 text-semantic-error text-xs flex items-center justify-between gap-3">
@@ -263,7 +275,7 @@ export default function DeploymentDetailPage() {
 
         <div className="w-full bg-surface-2 h-2 rounded-full overflow-hidden border border-hairline">
           <div
-            className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+            className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out motion-reduce:transition-none"
             style={{ width: `${progressPercent}%` }}
           ></div>
         </div>
@@ -312,7 +324,7 @@ export default function DeploymentDetailPage() {
             Robot Nodes Telemetry ({devices.length})
           </h3>
           <span className="text-[11px] text-ink-subtle font-mono flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary motion-safe:animate-pulse"></span>
             Streaming MQTT updates
           </span>
         </div>
@@ -353,7 +365,7 @@ export default function DeploymentDetailPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-full bg-surface-2 h-1.5 rounded-full overflow-hidden border border-hairline">
                           <div
-                            className={`h-full rounded-full transition-all duration-300 ${
+                            className={`h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none ${
                               d.status === "failed"
                                 ? "bg-semantic-error"
                                 : d.status === "success"
@@ -416,17 +428,17 @@ export default function DeploymentDetailPage() {
 
       {/* Rollout Completion Action Dialog */}
       {showCompletionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-hairline-strong bg-surface-1 shadow-2xl p-6 space-y-4 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+          <div ref={completionDialogRef} role="dialog" aria-modal="true" aria-labelledby="rollout-complete-title" aria-describedby="rollout-complete-description" tabIndex={-1} className="w-full max-w-md rounded-2xl border border-hairline-strong bg-surface-1 shadow-2xl p-6 space-y-4 text-center outline-none">
             <div className="w-12 h-12 rounded-full bg-semantic-success/15 border border-semantic-success/30 text-semantic-success flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-6 h-6" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-ink">
+              <h3 id="rollout-complete-title" className="text-base font-semibold text-ink">
                 Rollout Completed Successfully
               </h3>
-              <p className="text-xs text-ink-subtle">
+              <p id="rollout-complete-description" className="text-xs text-ink-subtle">
                 Target firmware <span className="font-mono text-primary font-semibold">v{targetVersion || deployment.firmware_version || "Target"}</span> has been deployed and verified across {deployment.total_devices} robot units.
               </p>
             </div>
@@ -448,16 +460,17 @@ export default function DeploymentDetailPage() {
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
+                ref={completionCloseRef}
                 type="button"
-                onClick={() => setShowCompletionModal(false)}
-                className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
+                onClick={closeCompletion}
+                className="w-full min-h-11 py-2.5 px-3 rounded-xl text-xs font-medium text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
               >
                 Stay on this Page
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/")}
-                className="w-full py-2.5 px-3 rounded-xl text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                className="w-full min-h-11 py-2.5 px-3 rounded-xl text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-surface-1 transition-colors shadow-sm flex items-center justify-center gap-1.5"
               >
                 <Bot className="w-4 h-4" />
                 Fleet Overview

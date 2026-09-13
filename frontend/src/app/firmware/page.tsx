@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   HardDriveDownload,
@@ -18,9 +18,10 @@ import {
   X,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { FirmwareVersion } from "@/lib/types";
+import { FirmwareVersion, getErrorMessage } from "@/lib/types";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/context/ToastContext";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 
 export default function FirmwarePage() {
   const { showToast } = useToast();
@@ -47,6 +48,15 @@ export default function FirmwarePage() {
   const [deletingFw, setDeletingFw] = useState<FirmwareVersion | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const editDialogRef = useRef<HTMLDivElement>(null);
+  const editCancelRef = useRef<HTMLButtonElement>(null);
+  const deleteDialogRef = useRef<HTMLDivElement>(null);
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const closeEdit = useCallback(() => setEditingFw(null), []);
+  const closeDelete = useCallback(() => setDeletingFw(null), []);
+  useDialogFocus(Boolean(editingFw), editDialogRef, editCancelRef, closeEdit, isUpdating);
+  useDialogFocus(Boolean(deletingFw), deleteDialogRef, deleteCancelRef, closeDelete, isDeleting);
 
   const openEditModal = (fw: FirmwareVersion) => {
     setEditingFw(fw);
@@ -74,8 +84,8 @@ export default function FirmwarePage() {
       showToast("Firmware Updated", `Firmware v${editVersion} release metadata saved successfully`, "success");
       setEditingFw(null);
       await loadFirmwares();
-    } catch (err: any) {
-      const msg = err.message || "Failed to update firmware";
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err, "Failed to update firmware");
       setUpdateError(msg);
       showToast("Update Failed", msg, "error");
     } finally {
@@ -93,8 +103,8 @@ export default function FirmwarePage() {
       showToast("Firmware Deleted", `Firmware release v${deletingFw.version} removed from active catalog`, "success");
       setDeletingFw(null);
       await loadFirmwares();
-    } catch (err: any) {
-      const msg = err.message || "Failed to delete firmware";
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err, "Failed to delete firmware");
       setDeleteError(msg);
       showToast("Deletion Failed", msg, "error");
     } finally {
@@ -106,8 +116,9 @@ export default function FirmwarePage() {
     try {
       const res = await api.getFirmwares();
       setFirmwares(res.data || []);
-    } catch (err) {
-      console.error(err);
+      setLoadError(null);
+    } catch {
+      setLoadError("Firmware catalog could not be refreshed. Existing entries may be stale.");
     } finally {
       setLoading(false);
     }
@@ -121,7 +132,7 @@ export default function FirmwarePage() {
     loadFirmwares();
   }, []);
 
-  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleFileDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setFile(e.dataTransfer.files[0]);
@@ -167,8 +178,8 @@ export default function FirmwarePage() {
       setVersion("");
       setReleaseNotes("");
       loadFirmwares();
-    } catch (err: any) {
-      let msg = err.message || "Failed to upload firmware binary";
+    } catch (err: unknown) {
+      let msg = getErrorMessage(err, "Failed to upload firmware binary");
       if (msg.includes("Failed to fetch")) {
         msg = "Network error (Failed to fetch). Please check connection or ensure backend is awake.";
       }
@@ -190,7 +201,7 @@ export default function FirmwarePage() {
     try {
       const res = await api.getFirmwareDownloadURL(id);
       window.open(res.url, "_blank");
-    } catch (err) {
+    } catch {
       alert("Failed to get download URL");
     }
   };
@@ -204,7 +215,7 @@ export default function FirmwarePage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl w-full mx-auto space-y-8">
+    <div className="w-full max-w-7xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -219,12 +230,19 @@ export default function FirmwarePage() {
 
         <button
           onClick={() => loadFirmwares()}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium bg-surface-1 hover:bg-surface-2 text-ink-muted border border-hairline hover:border-hairline-strong transition-colors w-fit"
+          className="flex min-h-11 items-center gap-2 px-3 py-2 rounded-md text-xs font-medium bg-surface-1 hover:bg-surface-2 text-ink-muted border border-hairline hover:border-hairline-strong transition-colors w-fit"
         >
           <RefreshCw className="w-3.5 h-3.5 text-ink-tertiary" />
           Refresh Catalog
         </button>
       </div>
+
+      {loadError && (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-semantic-warning/30 bg-semantic-warning/10 p-4 text-xs text-semantic-warning sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-center gap-2"><AlertCircle className="h-4 w-4 shrink-0" />{loadError}</span>
+          <button type="button" onClick={() => void loadFirmwares()} className="min-h-11 rounded-lg border border-semantic-warning/30 px-3 font-medium hover:bg-semantic-warning/10">Retry now</button>
+        </div>
+      )}
 
       {/* Upload Zone */}
       <div className="bg-surface-1 p-6 rounded-xl border border-hairline">
@@ -248,18 +266,20 @@ export default function FirmwarePage() {
         )}
 
         <form onSubmit={handleUpload} className="space-y-4">
-          <div
+          <label
+            htmlFor="file-input"
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
-            className="border border-dashed border-hairline hover:border-primary/50 rounded-xl p-6 text-center cursor-pointer transition-colors bg-surface-2/40 group"
-            onClick={() => document.getElementById("file-input")?.click()}
+            className="block border border-dashed border-hairline hover:border-primary/50 focus-within:border-primary-focus focus-within:ring-2 focus-within:ring-primary-focus/40 rounded-xl p-6 text-center cursor-pointer transition-colors bg-surface-2/40 group"
           >
             <input
               id="file-input"
+              name="firmware-file"
               type="file"
               accept=".bin,.tar.gz,.img,.hex"
               onChange={handleFileSelect}
-              className="hidden"
+              className="sr-only"
+              aria-describedby="firmware-file-hint"
             />
             <div className="flex flex-col items-center justify-center gap-2">
               <div className="p-3 rounded-full bg-surface-2 group-hover:bg-primary/15 text-ink-subtle group-hover:text-primary transition-colors">
@@ -275,36 +295,43 @@ export default function FirmwarePage() {
                   <p className="text-xs text-ink-muted font-medium">
                     Drag and drop firmware (.bin, .hex, .tar.gz, .img) here, or <span className="text-primary-hover underline underline-offset-2">browse</span>
                   </p>
-                  <p className="text-[11px] text-ink-tertiary mt-1">NIST P-256 signature and SHA256 checksum computed automatically</p>
+                  <p id="firmware-file-hint" className="text-xs text-ink-tertiary mt-1">NIST P-256 signature and SHA256 checksum computed automatically</p>
                 </div>
               )}
             </div>
-          </div>
+          </label>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-ink-muted mb-1">
+              <label htmlFor="firmware-version" className="block text-xs font-medium text-ink-muted mb-1">
                 Version Tag <span className="text-semantic-error">*</span>
               </label>
               <input
+                id="firmware-version"
+                name="firmware-version"
                 type="text"
                 placeholder="e.g. 1.2.0"
                 value={version}
                 onChange={(e) => setVersion(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink placeholder-ink-tertiary focus:outline-none focus:border-primary-focus font-mono transition-colors"
+                className="min-h-11 w-full px-3 py-2 text-base sm:text-xs rounded-md bg-surface-2 border border-hairline text-ink placeholder-ink-tertiary focus:outline-none focus:border-primary-focus font-mono transition-colors"
+                maxLength={50}
+                required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-ink-muted mb-1">
+              <label htmlFor="firmware-release-notes" className="block text-xs font-medium text-ink-muted mb-1">
                 Release Notes / Changelog
               </label>
               <input
+                id="firmware-release-notes"
+                name="firmware-release-notes"
                 type="text"
                 placeholder="e.g. Fixed joint vibration, updated motor limits"
                 value={releaseNotes}
                 onChange={(e) => setReleaseNotes(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink placeholder-ink-tertiary focus:outline-none focus:border-primary-focus transition-colors"
+                className="min-h-11 w-full px-3 py-2 text-base sm:text-xs rounded-md bg-surface-2 border border-hairline text-ink placeholder-ink-tertiary focus:outline-none focus:border-primary-focus transition-colors"
+                maxLength={500}
               />
             </div>
           </div>
@@ -313,11 +340,11 @@ export default function FirmwarePage() {
             <button
               type="submit"
               disabled={isUploading}
-              className="flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-50"
+              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-surface-1 transition-colors disabled:opacity-50"
             >
               {isUploading ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 motion-safe:animate-spin" />
                   Computing Checksum & Uploading...
                 </>
               ) : (
@@ -355,7 +382,7 @@ export default function FirmwarePage() {
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-ink-tertiary font-sans">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto text-primary mb-2" />
+                    <RefreshCw className="w-5 h-5 motion-safe:animate-spin mx-auto text-primary mb-2" />
                     Loading firmware catalog...
                   </td>
                 </tr>
@@ -393,7 +420,8 @@ export default function FirmwarePage() {
                         </span>
                         <button
                           onClick={() => handleCopyChecksum(fw.sha256_checksum, fw.id)}
-                          className="text-ink-tertiary hover:text-ink transition-colors"
+                          className="flex min-h-11 min-w-11 items-center justify-center rounded text-ink-tertiary hover:text-ink transition-colors"
+                          aria-label="Copy full SHA256 checksum"
                           title="Copy Full SHA256"
                         >
                           {copiedId === fw.id ? (
@@ -414,28 +442,28 @@ export default function FirmwarePage() {
                       <div className="inline-flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleDownload(fw.id)}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-surface-2 hover:bg-surface-3 text-ink-muted border border-hairline hover:border-hairline-strong"
+                          className="inline-flex min-h-11 items-center justify-center gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors bg-surface-2 hover:bg-surface-3 text-ink-muted border border-hairline hover:border-hairline-strong"
                           title="Download Binary via Presigned S3 URL"
                         >
                           <ExternalLink className="w-3.5 h-3.5" /> Presigned
                         </button>
                         <button
                           onClick={() => openEditModal(fw)}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-surface-2 hover:bg-surface-3 text-ink-muted border border-hairline hover:border-hairline-strong"
+                          className="inline-flex min-h-11 items-center justify-center gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors bg-surface-2 hover:bg-surface-3 text-ink-muted border border-hairline hover:border-hairline-strong"
                           title="Edit Version Tag & Release Notes"
                         >
                           <Pencil className="w-3.5 h-3.5" /> Edit
                         </button>
                         <button
                           onClick={() => setDeletingFw(fw)}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-semantic-error/10 hover:bg-semantic-error/20 text-semantic-error border border-semantic-error/25"
+                          className="inline-flex min-h-11 items-center justify-center gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors bg-semantic-error/10 hover:bg-semantic-error/20 text-semantic-error border border-semantic-error/25"
                           title="Delete Firmware Release"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Delete
                         </button>
                         <Link
                           href={`/deploy?firmware=${fw.id}`}
-                          className="inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded-md transition-colors bg-primary hover:bg-primary-hover active:bg-primary-focus text-white"
+                          className="inline-flex min-h-11 items-center justify-center gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors bg-primary hover:bg-primary-hover active:bg-primary-focus text-surface-1"
                         >
                           <Rocket className="w-3.5 h-3.5" /> Deploy
                         </Link>
@@ -463,15 +491,16 @@ export default function FirmwarePage() {
       {/* Edit Firmware Modal */}
       {editingFw && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md p-6 rounded-xl border border-hairline-strong bg-surface-1 shadow-2xl space-y-4">
+          <div ref={editDialogRef} role="dialog" aria-modal="true" aria-labelledby="edit-firmware-title" tabIndex={-1} className="w-full max-w-md p-6 rounded-xl border border-hairline-strong bg-surface-1 shadow-2xl space-y-4 outline-none">
             <div className="flex items-center justify-between pb-3 border-b border-hairline">
-              <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <h3 id="edit-firmware-title" className="text-sm font-semibold text-ink flex items-center gap-2">
                 <Pencil className="w-4 h-4 text-primary" />
                 Edit Firmware Release
               </h3>
               <button
-                onClick={() => setEditingFw(null)}
-                className="text-ink-tertiary hover:text-ink transition-colors"
+                onClick={closeEdit}
+                aria-label="Close firmware editor"
+                className="flex min-h-11 min-w-11 items-center justify-center text-ink-tertiary hover:text-ink transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -486,46 +515,53 @@ export default function FirmwarePage() {
 
             <form onSubmit={handleUpdate} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-ink-muted mb-1">
+                <label htmlFor="edit-firmware-version" className="block text-xs font-medium text-ink-muted mb-1">
                   Version Tag <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id="edit-firmware-version"
+                  name="edit-firmware-version"
                   type="text"
                   value={editVersion}
                   onChange={(e) => setEditVersion(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus font-mono transition-colors"
+                  className="min-h-11 w-full px-3 py-2 text-base sm:text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus font-mono transition-colors"
                   placeholder="e.g. 1.2.0"
+                  maxLength={50}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink-muted mb-1">
+                <label htmlFor="edit-firmware-notes" className="block text-xs font-medium text-ink-muted mb-1">
                   Release Notes / Changelog
                 </label>
                 <textarea
+                  id="edit-firmware-notes"
+                  name="edit-firmware-notes"
                   rows={3}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus transition-colors"
+                  className="w-full px-3 py-2 text-base sm:text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus transition-colors"
                   placeholder="Description of changes and updates..."
+                  maxLength={500}
                 />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
+                  ref={editCancelRef}
                   type="button"
-                  onClick={() => setEditingFw(null)}
-                  className="px-3.5 py-1.5 text-xs font-medium rounded-md text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
+                  onClick={closeEdit}
+                  className="min-h-11 px-3.5 py-2 text-xs font-medium rounded-md text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  className="min-h-11 px-3.5 py-2 text-xs font-medium rounded-md bg-primary hover:bg-primary-hover active:bg-primary-focus text-surface-1 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                  {isUpdating ? <RefreshCw className="w-3.5 h-3.5 motion-safe:animate-spin" /> : null}
                   Save Changes
                 </button>
               </div>
@@ -537,15 +573,16 @@ export default function FirmwarePage() {
       {/* Delete Confirmation Modal */}
       {deletingFw && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md p-6 rounded-xl border border-hairline-strong bg-surface-1 shadow-2xl space-y-4">
+          <div ref={deleteDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="delete-firmware-title" aria-describedby="delete-firmware-description" tabIndex={-1} className="w-full max-w-md p-6 rounded-xl border border-hairline-strong bg-surface-1 shadow-2xl space-y-4 outline-none">
             <div className="flex items-center justify-between pb-3 border-b border-hairline">
-              <h3 className="text-sm font-semibold text-semantic-error flex items-center gap-2">
+              <h3 id="delete-firmware-title" className="text-sm font-semibold text-semantic-error flex items-center gap-2">
                 <Trash2 className="w-4 h-4" />
                 Confirm Firmware Deletion
               </h3>
               <button
-                onClick={() => setDeletingFw(null)}
-                className="text-ink-tertiary hover:text-ink transition-colors"
+                onClick={closeDelete}
+                aria-label="Close deletion warning"
+                className="flex min-h-11 min-w-11 items-center justify-center text-ink-tertiary hover:text-ink transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -558,7 +595,7 @@ export default function FirmwarePage() {
               </div>
             )}
 
-            <p className="text-xs text-ink-muted leading-relaxed">
+            <p id="delete-firmware-description" className="text-xs text-ink-muted leading-relaxed">
               Are you sure you want to delete firmware release{" "}
               <span className="font-semibold text-ink font-mono">v{deletingFw.version}</span>?
             </p>
@@ -568,9 +605,10 @@ export default function FirmwarePage() {
 
             <div className="flex justify-end gap-2 pt-2">
               <button
+                ref={deleteCancelRef}
                 type="button"
-                onClick={() => setDeletingFw(null)}
-                className="px-3.5 py-1.5 text-xs font-medium rounded-md text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
+                onClick={closeDelete}
+                className="min-h-11 px-3.5 py-2 text-xs font-medium rounded-md text-ink-muted bg-surface-2 hover:bg-surface-3 border border-hairline transition-colors"
               >
                 Cancel
               </button>
@@ -578,9 +616,9 @@ export default function FirmwarePage() {
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-semantic-error hover:bg-semantic-error/90 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                className="min-h-11 px-3.5 py-2 text-xs font-medium rounded-md bg-semantic-error-strong hover:bg-semantic-error-strong/90 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
               >
-                {isDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                {isDeleting ? <RefreshCw className="w-3.5 h-3.5 motion-safe:animate-spin" /> : null}
                 Confirm Delete
               </button>
             </div>

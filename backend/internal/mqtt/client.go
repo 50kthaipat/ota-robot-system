@@ -34,11 +34,13 @@ func (c *Client) Subscribe() {
 
 func (c *Client) handleStatus(client mqtt.Client, msg mqtt.Message) {
 	var payload struct {
-		DeviceID  string `json:"device_id"`
-		FactoryID string `json:"factory_id"`
-		HwModel   string `json:"hw_model"`
-		Version   string `json:"version"`
-		Status    string `json:"status"`
+		DeviceID  string          `json:"device_id"`
+		FactoryID string          `json:"factory_id"`
+		HwModel   string          `json:"hw_model"`
+		Version   string          `json:"version"`
+		Status    string          `json:"status"`
+		FsmState  string          `json:"fsm_state"`
+		Telemetry json.RawMessage `json:"telemetry"`
 	}
 	if err := json.Unmarshal(msg.Payload(), &payload); err != nil {
 		log.Printf("error parsing status: %v", err)
@@ -62,6 +64,25 @@ func (c *Client) handleStatus(client mqtt.Client, msg mqtt.Message) {
 	})
 	if err != nil {
 		log.Printf("error upserting device: %v", err)
+	}
+
+	// Update metadata JSON with telemetry and FSM state
+	var metaMap map[string]interface{}
+	if len(payload.Telemetry) > 0 && string(payload.Telemetry) != "null" {
+		_ = json.Unmarshal(payload.Telemetry, &metaMap)
+	}
+	if metaMap == nil {
+		metaMap = make(map[string]interface{})
+	}
+	if payload.FsmState != "" {
+		metaMap["fsm_state"] = payload.FsmState
+	}
+
+	if len(metaMap) > 0 {
+		metaBytes, err := json.Marshal(metaMap)
+		if err == nil {
+			_, _ = c.dbPool.Exec(context.Background(), "UPDATE devices SET metadata = $1 WHERE id = $2", metaBytes, payload.DeviceID)
+		}
 	}
 }
 
@@ -97,9 +118,12 @@ func (c *Client) handleProgress(client mqtt.Client, msg mqtt.Message) {
 	})
 
 	if payload.Status == "success" && payload.Progress == 100 {
-		_ = c.queries.IncrementDeploymentSuccess(ctx, activeDD.DeploymentID)
 		dep, err := c.queries.GetDeployment(ctx, activeDD.DeploymentID)
 		if err == nil {
+			if dep.Status == "rolled_back" {
+				return
+			}
+			_ = c.queries.IncrementDeploymentSuccess(ctx, activeDD.DeploymentID)
 			fw, err := c.queries.GetFirmwareVersion(ctx, dep.FirmwareVersionID)
 			if err == nil {
 				_, _ = c.queries.UpdateDeviceVersion(ctx, db.UpdateDeviceVersionParams{
@@ -175,6 +199,10 @@ func (c *Client) handleError(client mqtt.Client, msg mqtt.Message) {
 						"version": prevVer,
 					}
 					_ = c.PublishCommand(d.DeviceID, rollbackCmd)
+					_, _ = c.queries.UpdateDeviceVersion(ctx, db.UpdateDeviceVersionParams{
+						ID:             d.DeviceID,
+						CurrentVersion: prevVer,
+					})
 				}
 			}
 			return

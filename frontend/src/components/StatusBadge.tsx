@@ -14,7 +14,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ""
     case "completed":
       return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-semantic-success/10 text-semantic-success border border-semantic-success/20 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-semantic-success animate-pulse"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-semantic-success motion-safe:animate-pulse"></span>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
@@ -25,7 +25,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ""
     case "installing":
       return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-primary/15 text-primary-hover border border-primary/30 ${className}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-primary-hover animate-ping"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-hover motion-safe:animate-ping"></span>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );

@@ -68,12 +68,18 @@ func (h *DeploymentHandler) CreateDeployment(c fiber.Ctx) error {
 
 	strategy := req.Strategy
 	if strategy == "" {
-		strategy = "full"
+		strategy = "canary"
+	}
+	if strategy != "canary" && strategy != "full" {
+		return c.Status(400).JSON(fiber.Map{"error": "strategy must be canary or full"})
 	}
 
 	threshold := req.RollbackThreshold
 	if threshold <= 0 {
 		threshold = 0.20
+	}
+	if threshold < 0.05 || threshold > 0.50 {
+		return c.Status(400).JSON(fiber.Map{"error": "rollback_threshold must be between 0.05 and 0.50"})
 	}
 
 	targetHw := req.HwModel
@@ -296,6 +302,10 @@ func (h *DeploymentHandler) Rollback(c fiber.Ctx) error {
 			"version": prevVer,
 		}
 		_ = h.mqttClient.PublishCommand(d.DeviceID, cmd)
+		_, _ = h.queries.UpdateDeviceVersion(ctx, db.UpdateDeviceVersionParams{
+			ID:             d.DeviceID,
+			CurrentVersion: prevVer,
+		})
 	}
 
 	_, _ = h.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
@@ -305,6 +315,3 @@ func (h *DeploymentHandler) Rollback(c fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"status": "rolled_back", "deployment_id": dep.ID})
 }
-
-
-

@@ -15,12 +15,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-canvas text-ink h-screen overflow-hidden flex antialiased selection:bg-primary selection:text-white">
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className="bg-canvas text-ink h-screen overflow-hidden flex antialiased selection:bg-primary selection:text-white" suppressHydrationWarning>
         <AuthProvider>
           <ToastProvider>
             <Sidebar />
-            <main className="flex-1 min-w-0 h-screen overflow-y-auto flex flex-col">
+            <main className="flex-1 min-w-0 h-screen overflow-y-auto flex flex-col pt-14 md:pt-0">
               {children}
             </main>
           </ToastProvider>

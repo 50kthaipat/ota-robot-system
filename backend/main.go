@@ -236,6 +236,10 @@ func main() {
 	protected.Get("/deployments", deploymentHandler.ListDeployments)
 	protected.Get("/deployments/:id", deploymentHandler.GetDeployment)
 
+	// Fleet device management
+	protected.Delete("/devices/:id", middleware.RequireRole("admin", "operator"), deviceHandler.DeleteDevice)
+	protected.Post("/devices/prune-offline", middleware.RequireRole("admin", "operator"), deviceHandler.PruneOfflineDevices)
+
 	// Mutations requiring operator or admin privileges
 	protected.Post("/firmware/upload", middleware.RequireRole("admin", "operator"), firmwareHandler.Upload)
 	protected.Patch("/firmware/:id", middleware.RequireRole("admin"), firmwareHandler.Update)

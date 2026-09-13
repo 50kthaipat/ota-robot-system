@@ -10,21 +10,23 @@ import (
 // Authenticate verifies the Bearer JWT token in the Authorization header
 func Authenticate() fiber.Handler {
 	return func(c fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
-		if authHeader == "" {
+		token := c.Cookies("access_token")
+		if authHeader := c.Get("Authorization"); authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "invalid Authorization header format",
+				})
+			}
+			token = parts[1]
+		}
+		if token == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "missing Authorization header",
+				"error": "authentication required",
 			})
 		}
 
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "invalid Authorization header format, expected Bearer <token>",
-			})
-		}
-
-		claims, err := auth.ValidateAccessToken(parts[1])
+		claims, err := auth.ValidateAccessToken(token)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid or expired token",

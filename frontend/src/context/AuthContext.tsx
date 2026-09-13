@@ -1,17 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Cpu } from "lucide-react";
 import { User } from "@/lib/types";
-import { api, setAccessToken } from "@/lib/api";
-
-const USER_STORAGE_KEY = "robo_ota_user";
-const TOKEN_STORAGE_KEY = "robo_ota_access_token";
+import { api } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -22,118 +18,36 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize from localStorage if in browser for instant render (Zero Flash)
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(USER_STORAGE_KEY);
-      if (stored) {
-        try {
-          return JSON.parse(stored) as User;
-        } catch {}
-      }
-    }
-    return null;
-  });
+  useEffect(() => setMounted(true), []);
 
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
-      if (stored) {
-        setAccessToken(stored);
-        return stored;
-      }
-    }
-    return null;
-  });
-
-  // If we already have a cached user and token in localStorage, do not block the UI on F5 refresh!
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
-      const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
-      if (storedUser && storedToken) {
-        return false; // Instant display!
-      }
-    }
-    return true;
-  });
-
-  // Attempt session verification & silent refresh
   const restoreSession = useCallback(async () => {
     try {
-      const currentToken = typeof window !== "undefined" ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
-      if (currentToken) {
-        setAccessToken(currentToken);
-        try {
-          const mePromise = api.getMe();
-          const timeoutPromise = new Promise<{ user: User }>((_, reject) =>
-            setTimeout(() => reject(new Error("Verification timeout")), 4000)
-          );
-          const meRes = await Promise.race([mePromise, timeoutPromise]);
-          setUser(meRes.user);
-          if (typeof window !== "undefined") {
-            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(meRes.user));
-          }
-          setIsLoading(false);
-          return;
-        } catch {
-          // Access token might be expired or timed out, attempt refresh below
-        }
-      }
-
-      // Try refresh endpoint (via cookie or X-Refresh-Token)
-      const refreshPromise = api.refresh();
-      const timeoutPromise = new Promise<any>((_, reject) =>
-        setTimeout(() => reject(new Error("Refresh timeout")), 4000)
-      );
-      const res = await Promise.race([refreshPromise, timeoutPromise]);
-
-      setUser(res.user);
-      setToken(res.token);
-      setAccessToken(res.token, res.refresh_token);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
-        localStorage.setItem(TOKEN_STORAGE_KEY, res.token);
-      }
+      const response = await api.getMe();
+      setUser(response.user);
     } catch {
-      // Both verification and refresh failed: clear session
       setUser(null);
-      setToken(null);
-      setAccessToken(null, null);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(USER_STORAGE_KEY);
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
-      }
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    restoreSession();
+    void restoreSession();
   }, [restoreSession]);
 
-  // Route guarding: protect all dashboard pages and redirect unauthenticated visits to /login
   useEffect(() => {
-    if (!isLoading) {
-      if (!user && pathname !== "/login") {
-        router.replace("/login");
-      } else if (user && pathname === "/login") {
-        router.replace("/");
-      }
-    }
-  }, [user, isLoading, pathname, router]);
+    if (!mounted || isLoading) return;
+    if (!user && pathname !== "/login") router.replace("/login");
+    if (user && pathname === "/login") router.replace("/");
+  }, [isLoading, mounted, pathname, router, user]);
 
   const login = async (username: string, password: string) => {
-    const res = await api.login({ username, password });
-    setUser(res.user);
-    setToken(res.token);
-    setAccessToken(res.token, res.refresh_token);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
-      localStorage.setItem(TOKEN_STORAGE_KEY, res.token);
-    }
+    const response = await api.login({ username, password });
+    setUser(response.user);
   };
 
   const logout = async () => {
@@ -141,61 +55,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await api.logout();
     } finally {
       setUser(null);
-      setToken(null);
-      setAccessToken(null, null);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(USER_STORAGE_KEY);
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
-      }
       router.replace("/login");
     }
   };
 
-  // If loading and visiting a protected route without cached user, show sleek FULLSCREEN centered loading indicator
-  if (isLoading && !user && pathname !== "/login") {
-    return (
-      <div className="fixed inset-0 z-50 w-screen h-screen bg-canvas flex flex-col items-center justify-center text-ink select-none">
-        <div className="flex flex-col items-center gap-3">
-          <div className="p-3.5 rounded-2xl bg-primary/10 border border-primary/20 text-primary animate-pulse shadow-lg">
-            <Cpu className="w-8 h-8" />
-          </div>
-          <div className="space-y-1.5 text-center">
-            <p className="font-mono text-xs font-medium text-ink-muted uppercase tracking-wider">
-              Verifying Session
-            </p>
-            <p className="font-mono text-[11px] text-ink-tertiary">
-              Connecting to Cloud Control Plane...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // If not authenticated and on a protected route, block render until redirect triggers
-  if (!isLoading && !user && pathname !== "/login") {
-    return null;
-  }
+  const showLoadingOverlay = mounted && isLoading && pathname !== "/login";
+  const canRenderChildren = pathname === "/login" || Boolean(user);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isLoading,
-        login,
-        logout,
-      }}
-    >
-      {children}
+    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+      {canRenderChildren ? children : null}
+      {showLoadingOverlay && (
+        <div className="fixed inset-0 z-50 flex h-screen w-screen select-none flex-col items-center justify-center bg-canvas text-ink">
+          <div className="flex flex-col items-center gap-3" role="status" aria-live="polite">
+            <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3.5 text-primary shadow-lg motion-safe:animate-pulse">
+              <Cpu className="h-8 w-8" aria-hidden="true" />
+            </div>
+            <div className="space-y-1.5 text-center">
+              <p className="font-mono text-xs font-medium uppercase tracking-wider text-ink-muted">Verifying session</p>
+              <p className="font-mono text-[11px] text-ink-tertiary">Connecting to control plane…</p>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

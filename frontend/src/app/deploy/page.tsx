@@ -4,18 +4,13 @@ import React, { useEffect, useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Rocket,
-  Layers,
-  Bot,
   AlertTriangle,
   CheckCircle2,
-  Cpu,
   RefreshCw,
-  Sliders,
   ShieldAlert,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { Device, FirmwareVersion } from "@/lib/types";
-import { StatusBadge } from "@/components/StatusBadge";
+import { Device, FirmwareVersion, getErrorMessage } from "@/lib/types";
 import { useToast } from "@/context/ToastContext";
 import { DeployRiskModal } from "@/components/DeployRiskModal";
 
@@ -29,10 +24,10 @@ function DeployForm() {
   const [firmwares, setFirmwares] = useState<FirmwareVersion[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedFwId, setSelectedFwId] = useState<string>("");
-  const [targetScope, setTargetScope] = useState<"all" | "factory" | "custom">("all");
+  const [targetScope, setTargetScope] = useState<"all" | "factory" | "custom">("factory");
   const [selectedFactory, setSelectedFactory] = useState<string>("");
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
-  const [strategy, setStrategy] = useState<"full" | "canary">("full");
+  const [strategy, setStrategy] = useState<"full" | "canary">("canary");
   const [rollbackThreshold, setRollbackThreshold] = useState<number>(20);
   const [loading, setLoading] = useState<boolean>(true);
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
@@ -56,8 +51,7 @@ function DeployForm() {
           setTargetScope("custom");
           setSelectedDeviceIds([preselectedDevice]);
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
         setError("Failed to load initial configuration data.");
       } finally {
         setLoading(false);
@@ -70,11 +64,12 @@ function DeployForm() {
     const s = new Set<string>();
     devices.forEach((d) => s.add(d.factory_id));
     const arr = Array.from(s);
-    if (arr.length > 0 && !selectedFactory) {
-      setSelectedFactory(arr[0]);
-    }
     return arr;
-  }, [devices, selectedFactory]);
+  }, [devices]);
+
+  useEffect(() => {
+    if (!selectedFactory && factories.length > 0) setSelectedFactory(factories[0]);
+  }, [factories, selectedFactory]);
 
   const eligibleDevices = useMemo(() => {
     return devices.filter((d) => d.status === "online");
@@ -121,6 +116,12 @@ function DeployForm() {
       showToast("No Target Units", "No eligible online robots selected in current fleet scope.", "warning");
       return;
     }
+    const targetModels = new Set(targetDevices.map((device) => device.hw_model));
+    if (targetModels.size > 1) {
+      setError("The selected scope mixes hardware models. Use Manual Selection and choose one model per rollout.");
+      showToast("Mixed Hardware Models", "For firmware safety, each rollout must target a single robot hardware model.", "warning");
+      return;
+    }
 
     setError(null);
     setIsRiskModalOpen(true);
@@ -136,7 +137,8 @@ function DeployForm() {
       const payload = {
         firmware_id: selectedFwId,
         strategy: strategy,
-        device_ids: targetScope === "all" ? undefined : targetDevices.map((d) => d.id),
+        device_ids: targetDevices.map((d) => d.id),
+        hw_model: targetDevices[0].hw_model,
         rollback_threshold: rollbackThreshold / 100,
       };
 
@@ -148,8 +150,8 @@ function DeployForm() {
         "success"
       );
       router.push(`/deployments/${res.id}`);
-    } catch (err: any) {
-      const errMsg = err.message || "Failed to trigger deployment.";
+    } catch (err: unknown) {
+      const errMsg = getErrorMessage(err, "Failed to trigger deployment.");
       setError(errMsg);
       showToast("Deployment Failed", errMsg, "error");
       setIsLaunching(false);
@@ -158,15 +160,15 @@ function DeployForm() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center text-slate-400">
-        <RefreshCw className="w-8 h-8 animate-spin mx-auto text-cyan-400 mb-3" />
+      <div className="p-12 text-center text-ink-subtle" role="status">
+        <RefreshCw className="w-8 h-8 motion-safe:animate-spin mx-auto text-primary mb-3" />
         Loading deployment launcher...
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-5xl w-full mx-auto space-y-8">
+    <div className="w-full max-w-5xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-semibold tracking-tight text-ink flex items-center gap-2.5">
@@ -202,10 +204,12 @@ function DeployForm() {
             {firmwares.map((fw) => {
               const isSelected = selectedFwId === fw.id;
               return (
-                <div
+                <button
+                  type="button"
                   key={fw.id}
                   onClick={() => setSelectedFwId(fw.id)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-colors ${
+                  aria-pressed={isSelected}
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition-colors ${
                     isSelected
                       ? "border-primary bg-primary/10"
                       : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2"
@@ -221,7 +225,7 @@ function DeployForm() {
                   <p className="text-[10px] text-ink-tertiary font-mono mt-2">
                     SHA: {fw.sha256_checksum.slice(0, 12)}...
                   </p>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -239,6 +243,7 @@ function DeployForm() {
           <button
             type="button"
             onClick={() => setTargetScope("all")}
+            aria-pressed={targetScope === "all"}
             className={`p-4 rounded-xl border text-left transition-colors ${
               targetScope === "all"
                 ? "border-primary bg-primary/10"
@@ -252,6 +257,7 @@ function DeployForm() {
           <button
             type="button"
             onClick={() => setTargetScope("factory")}
+            aria-pressed={targetScope === "factory"}
             className={`p-4 rounded-xl border text-left transition-colors ${
               targetScope === "factory"
                 ? "border-primary bg-primary/10"
@@ -265,6 +271,7 @@ function DeployForm() {
           <button
             type="button"
             onClick={() => setTargetScope("custom")}
+            aria-pressed={targetScope === "custom"}
             className={`p-4 rounded-xl border text-left transition-colors ${
               targetScope === "custom"
                 ? "border-primary bg-primary/10"
@@ -279,11 +286,13 @@ function DeployForm() {
         {/* Factory Dropdown */}
         {targetScope === "factory" && (
           <div className="pt-2">
-            <label className="block text-xs font-medium text-ink-muted mb-1">Select Factory Facility</label>
+            <label htmlFor="deployment-factory" className="block text-xs font-medium text-ink-muted mb-1">Select Factory Facility</label>
             <select
+              id="deployment-factory"
+              name="deployment-factory"
               value={selectedFactory}
               onChange={(e) => setSelectedFactory(e.target.value)}
-              className="px-3 py-2 text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus w-full sm:w-80 transition-colors"
+              className="min-h-11 px-3 py-2 text-base sm:text-xs rounded-md bg-surface-2 border border-hairline text-ink focus:outline-none focus:border-primary-focus w-full sm:w-80 transition-colors"
             >
               {factories.map((f) => (
                 <option key={f} value={f}>
@@ -347,9 +356,11 @@ function DeployForm() {
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div
+          <button
+            type="button"
             onClick={() => setStrategy("full")}
-            className={`p-4 rounded-xl border cursor-pointer transition-colors ${
+            aria-pressed={strategy === "full"}
+            className={`p-4 rounded-xl border text-left cursor-pointer transition-colors ${
               strategy === "full"
                 ? "border-primary bg-primary/10"
                 : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2"
@@ -362,11 +373,13 @@ function DeployForm() {
             <p className="text-xs text-ink-subtle mt-1 leading-relaxed">
               Dispatches the update payload to all targeted units simultaneously. Ideal for rapid development and testing.
             </p>
-          </div>
+          </button>
 
-          <div
+          <button
+            type="button"
             onClick={() => setStrategy("canary")}
-            className={`p-4 rounded-xl border cursor-pointer transition-colors ${
+            aria-pressed={strategy === "canary"}
+            className={`p-4 rounded-xl border text-left cursor-pointer transition-colors ${
               strategy === "canary"
                 ? "border-primary bg-primary/10"
                 : "border-hairline bg-surface-2/40 hover:border-hairline-strong hover:bg-surface-2"
@@ -379,26 +392,29 @@ function DeployForm() {
             <p className="text-xs text-ink-subtle mt-1 leading-relaxed">
               Progressively deploys across phases (Phase 1: 20% → Phase 2: 60% → Phase 3: 100%) with wait observation intervals.
             </p>
-          </div>
+          </button>
         </div>
 
         {/* Safety Rollback Threshold */}
         <div className="pt-3 border-t border-hairline">
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-ink-muted font-medium flex items-center gap-1.5">
+            <label htmlFor="rollback-threshold" className="text-ink-muted font-medium flex items-center gap-1.5">
               <ShieldAlert className="w-4 h-4 text-semantic-warning" />
               Automated Emergency Rollback Threshold
-            </span>
+            </label>
             <span className="font-mono text-primary-hover font-semibold">{rollbackThreshold}% Failures</span>
           </div>
           <input
+            id="rollback-threshold"
+            name="rollback-threshold"
             type="range"
             min={5}
             max={50}
             step={5}
             value={rollbackThreshold}
             onChange={(e) => setRollbackThreshold(Number(e.target.value))}
-            className="w-full accent-primary cursor-pointer"
+            className="min-h-11 w-full accent-primary cursor-pointer"
+            aria-valuetext={`${rollbackThreshold}% failures`}
           />
           <p className="text-[11px] text-ink-tertiary mt-1">
             If failure rate across units exceeds this threshold, rollout will immediately abort and command auto-rollback.
@@ -420,11 +436,11 @@ function DeployForm() {
         <button
           onClick={handleOpenRiskModal}
           disabled={isLaunching || targetDevices.length === 0 || !selectedFwId}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          className="flex min-h-11 items-center gap-2 px-5 py-2.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-surface-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
           {isLaunching ? (
             <>
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <RefreshCw className="w-3.5 h-3.5 motion-safe:animate-spin" />
               Broadcasting Rollout...
             </>
           ) : (
@@ -455,7 +471,7 @@ function DeployForm() {
 
 export default function DeployPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-slate-400">Loading launcher...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-ink-subtle">Loading launcher...</div>}>
       <DeployForm />
     </Suspense>
   );

@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Activity, RefreshCw, Rocket, Eye, CheckCircle2, Clock } from "lucide-react";
+import { Activity, AlertTriangle, RefreshCw, Rocket, Eye } from "lucide-react";
 import { api } from "@/lib/api";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Deployment } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Pagination } from "@/components/Pagination";
@@ -13,13 +14,15 @@ export default function DeploymentsHistoryPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadDeployments = async () => {
     try {
       const res = await api.getDeployments();
       setDeployments(res.data || []);
-    } catch (err) {
-      console.error(err);
+      setLoadError(null);
+    } catch {
+      setLoadError("Rollout history could not be refreshed. Existing rows may be stale.");
     } finally {
       setLoading(false);
     }
@@ -27,11 +30,9 @@ export default function DeploymentsHistoryPage() {
 
   useEffect(() => {
     loadDeployments();
-    const timer = setInterval(() => {
-      loadDeployments();
-    }, 3000);
-    return () => clearInterval(timer);
   }, []);
+
+  useVisibilityPolling(loadDeployments, 15000);
 
   const paginatedDeployments = deployments.slice(
     (currentPage - 1) * pageSize,
@@ -39,7 +40,7 @@ export default function DeploymentsHistoryPage() {
   );
 
   return (
-    <div className="p-8 max-w-7xl w-full mx-auto space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -55,7 +56,7 @@ export default function DeploymentsHistoryPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => loadDeployments()}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-1 hover:bg-surface-2 text-ink border border-hairline transition"
+            className="flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-surface-1 hover:bg-surface-2 text-ink border border-hairline transition"
           >
             <RefreshCw className="w-3.5 h-3.5 text-ink-muted" />
             Refresh
@@ -63,13 +64,20 @@ export default function DeploymentsHistoryPage() {
 
           <Link
             href="/deploy"
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-white shadow-sm transition"
+            className="flex min-h-11 items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-primary hover:bg-primary-hover active:bg-primary-focus text-surface-1 shadow-sm transition"
           >
             <Rocket className="w-3.5 h-3.5" />
             New Rollout
           </Link>
         </div>
       </div>
+
+      {loadError && (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-semantic-warning/30 bg-semantic-warning/10 p-4 text-xs text-semantic-warning sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />{loadError}</span>
+          <button type="button" onClick={() => void loadDeployments()} className="min-h-11 rounded-lg border border-semantic-warning/30 px-3 font-medium hover:bg-semantic-warning/10">Retry now</button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-surface-1 rounded-lg border border-hairline overflow-hidden">
@@ -97,7 +105,7 @@ export default function DeploymentsHistoryPage() {
               {loading ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-ink-subtle font-sans">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto text-primary mb-2" />
+                    <RefreshCw className="w-5 h-5 motion-safe:animate-spin mx-auto text-primary mb-2" />
                     Loading deployment history...
                   </td>
                 </tr>

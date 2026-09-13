@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -33,23 +34,37 @@ hkeZCoqleIU8Ix6uE5NVhG7KAtIVTcO3ylWXNO4qxiTJvhyMEA73jEgheg==
 -----END PUBLIC KEY-----`
 
 var (
-	deviceID          string
-	factoryID         string
-	hwModel           string
-	currentVersion    = "1.0.0"
-	status            = "online"
-	ecdsaPubKey       *ecdsa.PublicKey
-	agentStateMachine *agent.StateMachine
+	deviceID           string
+	factoryID          string
+	hwModel            string
+	currentVersion     = "1.0.0"
+	status             = "online"
+	ecdsaPubKey        *ecdsa.PublicKey
+	agentStateMachine  *agent.StateMachine
+	isAGV              bool
+	currentBattery     = 88
+	isCharging         = true
+	configuredActivity = "idle"
 )
 
+type TelemetryData struct {
+	BatteryLevel     *int   `json:"battery_level,omitempty"`
+	IsCharging       *bool  `json:"is_charging,omitempty"`
+	NetworkRSSI      int    `json:"network_rssi"`
+	NetworkBandwidth string `json:"network_bandwidth"`
+	PowerMode        string `json:"power_mode"`
+	Activity         string `json:"activity"`
+}
+
 type StatusUpdate struct {
-	DeviceID  string `json:"device_id"`
-	FactoryID string `json:"factory_id"`
-	HwModel   string `json:"hw_model"`
-	Version   string `json:"version"`
-	Status    string `json:"status"`
-	FsmState  string `json:"fsm_state"`
-	Timestamp string `json:"timestamp"`
+	DeviceID  string         `json:"device_id"`
+	FactoryID string         `json:"factory_id"`
+	HwModel   string         `json:"hw_model"`
+	Version   string         `json:"version"`
+	Status    string         `json:"status"`
+	FsmState  string         `json:"fsm_state"`
+	Timestamp string         `json:"timestamp"`
+	Telemetry *TelemetryData `json:"telemetry,omitempty"`
 }
 
 type Command struct {
@@ -59,6 +74,9 @@ type Command struct {
 	DownloadURL    string `json:"download_url"`
 	Sha256Checksum string `json:"sha256_checksum"`
 	Signature      string `json:"signature"`
+	Activity       string `json:"activity,omitempty"`
+	BatteryLevel   *int   `json:"battery_level,omitempty"`
+	IsCharging     *bool  `json:"is_charging,omitempty"`
 }
 
 type ProgressUpdate struct {
@@ -159,6 +177,19 @@ func main() {
 			go handleUpdate(client, cmd)
 		} else if cmd.Action == "rollback" {
 			go handleRollback(client, cmd)
+		} else if cmd.Action == "simulate" || cmd.Action == "set_telemetry" {
+			if cmd.Activity != "" {
+				configuredActivity = cmd.Activity
+				log.Printf("Robot %s: Activity changed to '%s' via telemetry simulation", deviceID, configuredActivity)
+			}
+			if cmd.BatteryLevel != nil {
+				currentBattery = *cmd.BatteryLevel
+				log.Printf("Robot %s: Battery level set to %d%% via telemetry simulation", deviceID, currentBattery)
+			}
+			if cmd.IsCharging != nil {
+				isCharging = *cmd.IsCharging
+				log.Printf("Robot %s: Charging state set to %v via telemetry simulation", deviceID, isCharging)
+			}
 		}
 	}
 
@@ -176,8 +207,52 @@ func main() {
 
 	log.Printf("Robot %s started. Connected to %s [FSM: %s]", deviceID, broker, agentStateMachine.GetState())
 
+	isAGV = strings.Contains(strings.ToLower(hwModel), "agv") || strings.Contains(strings.ToLower(deviceID), "agv")
+	if act := os.Getenv("ROBOT_ACTIVITY"); act != "" {
+		configuredActivity = act
+	}
+	if batStr := os.Getenv("INITIAL_BATTERY"); batStr != "" {
+		if val, err := strconv.Atoi(batStr); err == nil {
+			currentBattery = val
+		}
+	}
+	if chgStr := os.Getenv("IS_CHARGING"); chgStr == "false" {
+		isCharging = false
+	}
+
 	go func() {
 		for {
+			var telemetry *TelemetryData
+			if isAGV {
+				if isCharging {
+					currentBattery++
+					if currentBattery >= 98 {
+						isCharging = false
+					}
+				} else {
+					if currentBattery > 15 {
+						currentBattery--
+					}
+				}
+				batVal := currentBattery
+				chgVal := isCharging
+				telemetry = &TelemetryData{
+					BatteryLevel:     &batVal,
+					IsCharging:       &chgVal,
+					NetworkRSSI:      -58 - rand.Intn(10),
+					NetworkBandwidth: "54 Mbps (Wi-Fi 802.11ac)",
+					PowerMode:        "li_ion_pack",
+					Activity:         configuredActivity,
+				}
+			} else {
+				telemetry = &TelemetryData{
+					NetworkRSSI:      -50 - rand.Intn(12),
+					NetworkBandwidth: "100 Mbps (Gigabit Ethernet)",
+					PowerMode:        "ac_mains_3phase",
+					Activity:         configuredActivity,
+				}
+			}
+
 			update := StatusUpdate{
 				DeviceID:  deviceID,
 				FactoryID: factoryID,
@@ -186,6 +261,7 @@ func main() {
 				Status:    status,
 				FsmState:  string(agentStateMachine.GetState()),
 				Timestamp: time.Now().Format(time.RFC3339),
+				Telemetry: telemetry,
 			}
 			payload, _ := json.Marshal(update)
 			client.Publish(fmt.Sprintf("ota/device/%s/status", deviceID), 1, false, payload)
@@ -218,6 +294,28 @@ func handleUpdate(client mqtt.Client, cmd Command) {
 	if err := agentStateMachine.Trigger(agent.EventUpdateCommand); err != nil {
 		log.Printf("Robot %s: FSM rejected update command in state %s: %v", deviceID, agentStateMachine.GetState(), err)
 		publishError(client, fmt.Sprintf("invalid agent state for update: %s", agentStateMachine.GetState()))
+		return
+	}
+
+	// Safety Interlock 1: Workload Protection (Cannot update while executing active task/program)
+	if configuredActivity != "idle" {
+		log.Printf("Robot %s: Safety Interlock violation - Robot is busy with activity '%s'", deviceID, configuredActivity)
+		_ = agentStateMachine.Trigger(agent.EventVerifyFail)
+		publishError(client, fmt.Sprintf("safety interlock engaged: robot is currently running activity '%s'", configuredActivity))
+		time.Sleep(200 * time.Millisecond)
+		_ = agentStateMachine.Trigger(agent.EventReset)
+		status = "online"
+		return
+	}
+
+	// Safety Interlock 2: AGV Minimum Safe Battery Threshold (>= 50%)
+	if isAGV && currentBattery < 50 {
+		log.Printf("Robot %s: Safety Interlock violation - Insufficient battery: %d%% (minimum 50%% required)", deviceID, currentBattery)
+		_ = agentStateMachine.Trigger(agent.EventVerifyFail)
+		publishError(client, fmt.Sprintf("safety interlock engaged: AGV battery level (%d%%) is below safe threshold 50%%", currentBattery))
+		time.Sleep(200 * time.Millisecond)
+		_ = agentStateMachine.Trigger(agent.EventReset)
+		status = "online"
 		return
 	}
 

@@ -44,15 +44,17 @@ export const Pagination: React.FC<PaginationProps> = ({
       <div className="flex items-center gap-4">
         {/* Page Size Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-ink-subtle text-[11px]">Rows per page:</span>
+          <label htmlFor="pagination-page-size" className="text-ink-subtle text-xs">Rows per page:</label>
           <select
+            id="pagination-page-size"
+            name="pagination-page-size"
             value={pageSize}
             onChange={(e) => {
               const newSize = Number(e.target.value);
               onPageSizeChange(newSize);
               onPageChange(1);
             }}
-            className="px-2 py-1 text-xs font-mono rounded bg-surface-2 border border-hairline text-ink-muted focus:outline-none focus:border-primary-focus transition"
+            className="min-h-11 px-2 py-2 text-base sm:text-xs font-mono rounded bg-surface-2 border border-hairline text-ink-muted focus:outline-none focus:border-primary-focus transition-colors"
           >
             {pageSizeOptions.map((opt) => (
               <option key={opt} value={opt}>
@@ -65,39 +67,47 @@ export const Pagination: React.FC<PaginationProps> = ({
         {/* Page Navigation */}
         <div className="flex items-center gap-1.5 font-mono">
           <button
+            type="button"
             onClick={() => onPageChange(1)}
             disabled={!canPrev}
             title="First Page"
-            className="p-1 rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition"
+            aria-label="Go to first page"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
           >
             <ChevronsLeft className="w-3.5 h-3.5" />
           </button>
           <button
+            type="button"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={!canPrev}
             title="Previous Page"
-            className="p-1 rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition"
+            aria-label="Go to previous page"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
 
-          <span className="px-2.5 py-0.5 text-[11px] text-ink-muted font-medium bg-surface-2/60 rounded border border-hairline">
+          <span className="px-2.5 py-1 text-xs text-ink-muted font-medium bg-surface-2/60 rounded border border-hairline">
             Page {currentPage} of {totalPages}
           </span>
 
           <button
+            type="button"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={!canNext}
             title="Next Page"
-            className="p-1 rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition"
+            aria-label="Go to next page"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
           <button
+            type="button"
             onClick={() => onPageChange(totalPages)}
             disabled={!canNext}
             title="Last Page"
-            className="p-1 rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition"
+            aria-label="Go to last page"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded bg-surface-2 hover:bg-surface-3 border border-hairline text-ink-muted hover:text-ink disabled:opacity-40 disabled:pointer-events-none transition-colors"
           >
             <ChevronsRight className="w-3.5 h-3.5" />
           </button>
