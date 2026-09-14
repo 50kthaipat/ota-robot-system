@@ -1,0 +1,3 @@
+﻿# Exclude AI agent skills and rendered examples from GitHub language statistics
+.agents/** linguist-vendored
+
