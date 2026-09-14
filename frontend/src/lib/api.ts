@@ -41,7 +41,8 @@ async function fetchJSON<T>(url: string, init?: RequestInit, retry = true): Prom
     cache: "no-store",
   });
 
-  if (response.status === 401 && retry && !url.includes("/api/v1/auth/")) {
+  const isAuthMutation = url.includes("/login") || url.includes("/refresh") || url.includes("/logout");
+  if (response.status === 401 && retry && !isAuthMutation) {
     if (await refreshSession()) return fetchJSON<T>(url, init, false);
   }
 

@@ -29,7 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await api.getMe();
       setUser(response.user);
     } catch {
-      setUser(null);
+      try {
+        const refreshResponse = await api.refresh();
+        setUser(refreshResponse.user);
+      } catch {
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
