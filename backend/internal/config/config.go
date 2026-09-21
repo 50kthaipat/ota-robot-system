@@ -26,6 +26,7 @@ type Config struct {
 	MQTT     MQTTConfig
 	Auth     AuthConfig
 	CORS     CORSConfig
+	Metrics  MetricsConfig
 }
 
 // DatabaseConfig stores database connection settings.
@@ -70,6 +71,11 @@ type AuthConfig struct {
 // CORSConfig stores allowed origins.
 type CORSConfig struct {
 	AllowedOrigins []string
+}
+
+// MetricsConfig stores Prometheus metrics access and security parameters.
+type MetricsConfig struct {
+	Token string
 }
 
 // Load reads environment variables and produces a validated Config instance.
@@ -170,6 +176,11 @@ func Load() (*Config, error) {
 		}
 	}
 
+	metricsToken := strings.TrimSpace(os.Getenv("METRICS_TOKEN"))
+	if metricsToken == "" {
+		metricsToken = strings.TrimSpace(os.Getenv("METRICS_BEARER_TOKEN"))
+	}
+
 	cfg := &Config{
 		AppEnv: env,
 		Port:   port,
@@ -205,6 +216,9 @@ func Load() (*Config, error) {
 		CORS: CORSConfig{
 			AllowedOrigins: origins,
 		},
+		Metrics: MetricsConfig{
+			Token: metricsToken,
+		},
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -233,6 +247,10 @@ func (c *Config) Validate() error {
 
 		if c.Auth.AdminPassword == "Admin@OTA2026!" {
 			return errors.New("ADMIN_PASSWORD must be explicitly provided in production mode instead of default password")
+		}
+
+		if c.Metrics.Token == "" {
+			return errors.New("METRICS_TOKEN must be configured in production mode to protect /metrics endpoint")
 		}
 	}
 

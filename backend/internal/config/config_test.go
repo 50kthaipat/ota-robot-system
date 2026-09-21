@@ -1,4 +1,4 @@
-﻿package config
+package config
 
 import (
 	"os"
@@ -73,6 +73,9 @@ func TestConfig_ProductionValid(t *testing.T) {
 			JWTSecret:     "very-secure-high-entropy-jwt-secret-phrase-64chars",
 			AdminPassword: "CustomSecureAdminPassword123!",
 		},
+		Metrics: MetricsConfig{
+			Token: "secure-metrics-prom-token-2026",
+		},
 	}
 
 	err := cfg.Validate()
@@ -80,3 +83,25 @@ func TestConfig_ProductionValid(t *testing.T) {
 		t.Fatalf("expected production config to pass validation, got: %v", err)
 	}
 }
+
+func TestConfig_ProductionFailFast_MissingMetricsToken(t *testing.T) {
+	cfg := &Config{
+		AppEnv: EnvProduction,
+		Database: DatabaseConfig{
+			URL: "postgres://prod_user:prod_pass@aws.rds.com:5432/otadb",
+		},
+		Auth: AuthConfig{
+			JWTSecret:     "very-secure-high-entropy-jwt-secret-phrase-64chars",
+			AdminPassword: "CustomSecureAdminPassword123!",
+		},
+		Metrics: MetricsConfig{
+			Token: "",
+		},
+	}
+
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("expected validation error for missing METRICS_TOKEN in production, got nil")
+	}
+}
+

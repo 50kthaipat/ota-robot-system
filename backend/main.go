@@ -201,6 +201,7 @@ func main() {
 	protected.Post("/deployments", middleware.RequireRole("admin", "operator"), deploymentHandler.CreateDeployment)
 	protected.Post("/deployments/:id/rollback", middleware.RequireRole("admin", "operator"), deploymentHandler.Rollback)
 
+	app.Use("/metrics", middleware.RequireMetricsAuth(cfg.Metrics.Token, cfg.AppEnv))
 	app.Get("/metrics", metrics.Handler())
 
 	port := ":" + cfg.Port

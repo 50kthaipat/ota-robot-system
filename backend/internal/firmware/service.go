@@ -77,11 +77,8 @@ func (s *ReleaseServiceImpl) Release(ctx context.Context, params ReleaseParams) 
 	}
 
 	size := len(params.Data)
-	if size < MinFirmwareSize {
-		return nil, fmt.Errorf("firmware file too small: must be at least %d bytes", MinFirmwareSize)
-	}
-	if size > MaxFirmwareSize {
-		return nil, fmt.Errorf("firmware file exceeds maximum limit of %d bytes", MaxFirmwareSize)
+	if err := ValidateBinary(filename, params.Data); err != nil {
+		return nil, err
 	}
 
 	// 1. Invariant Check: Check uniqueness in database BEFORE uploading to storage
