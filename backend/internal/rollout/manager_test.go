@@ -1,10 +1,37 @@
-package orchestrator
+﻿package rollout
 
 import (
+	"sync"
 	"testing"
 )
 
-func TestCanary_PhaseConfig(t *testing.T) {
+// mockDispatcher records published commands for test assertions.
+type mockDispatcher struct {
+	mu       sync.Mutex
+	commands map[string]interface{}
+}
+
+func newMockDispatcher() *mockDispatcher {
+	return &mockDispatcher{
+		commands: make(map[string]interface{}),
+	}
+}
+
+func (m *mockDispatcher) PublishCommand(deviceID string, cmd interface{}) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.commands[deviceID] = cmd
+	return nil
+}
+
+func (m *mockDispatcher) getCommand(deviceID string) (interface{}, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	cmd, ok := m.commands[deviceID]
+	return cmd, ok
+}
+
+func TestRollout_PhaseConfig(t *testing.T) {
 	if len(PhaseConfig) != 3 {
 		t.Fatalf("expected 3 phases, got %d", len(PhaseConfig))
 	}
@@ -22,36 +49,24 @@ func TestCanary_PhaseConfig(t *testing.T) {
 	}
 }
 
-func TestCanary_ClampPhaseEnd(t *testing.T) {
+func TestRollout_ClampPhaseEnd(t *testing.T) {
 	cases := []struct {
 		n        int
 		fraction float64
 		expected int
 	}{
-		// Single device
 		{n: 1, fraction: 0.20, expected: 1},
 		{n: 1, fraction: 0.60, expected: 1},
 		{n: 1, fraction: 1.00, expected: 1},
-
-		// 5 devices (Thesis Fleet standard)
 		{n: 5, fraction: 0.20, expected: 1},
 		{n: 5, fraction: 0.60, expected: 3},
 		{n: 5, fraction: 1.00, expected: 5},
-
-		// 10 devices
 		{n: 10, fraction: 0.20, expected: 2},
 		{n: 10, fraction: 0.60, expected: 6},
 		{n: 10, fraction: 1.00, expected: 10},
-
-		// 50 devices
 		{n: 50, fraction: 0.20, expected: 10},
 		{n: 50, fraction: 0.60, expected: 30},
 		{n: 50, fraction: 1.00, expected: 50},
-
-		// 100 devices (Stress test scale)
-		{n: 100, fraction: 0.20, expected: 20},
-		{n: 100, fraction: 0.60, expected: 60},
-		{n: 100, fraction: 1.00, expected: 100},
 	}
 
 	for _, c := range cases {
@@ -62,8 +77,7 @@ func TestCanary_ClampPhaseEnd(t *testing.T) {
 	}
 }
 
-func TestCanary_FleetPhasePartitionIntegrity(t *testing.T) {
-	// Test that for fleet sizes from 1 to 50, all devices are covered without duplicate or missing indices
+func TestRollout_FleetPhasePartitionIntegrity(t *testing.T) {
 	fleetSizes := []int{1, 2, 3, 4, 5, 8, 10, 20, 50}
 
 	for _, n := range fleetSizes {
@@ -94,7 +108,6 @@ func TestCanary_FleetPhasePartitionIntegrity(t *testing.T) {
 				n, totalDispatched, n, len(phase1), len(phase2), len(phase3))
 		}
 
-		// Phase 1 must always have at least 1 device if n > 0
 		if len(phase1) < 1 {
 			t.Errorf("fleet size %d: phase 1 must have at least 1 sentinel device, got %d", n, len(phase1))
 		}

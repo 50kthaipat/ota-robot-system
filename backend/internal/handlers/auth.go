@@ -74,7 +74,7 @@ func clearAuthCookies(c fiber.Ctx) {
 }
 
 // AutoMigrateAndSeed ensures auth tables exist and seeds a default admin if none exists
-func (h *AuthHandler) AutoMigrateAndSeed(ctx context.Context) error {
+func (h *AuthHandler) AutoMigrateAndSeed(ctx context.Context, adminUser, adminEmail, adminPass string) error {
 	queries := []string{
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INT NOT NULL DEFAULT 0;`,
@@ -96,21 +96,12 @@ func (h *AuthHandler) AutoMigrateAndSeed(ctx context.Context) error {
 		}
 	}
 
-	// Check if any user exists
+	// Check if any user exists, seed initial admin if credentials are provided
 	var count int
 	err := h.db.QueryRow(ctx, "SELECT COUNT(*) FROM users").Scan(&count)
-	if err == nil && count == 0 {
-		adminUser := os.Getenv("ADMIN_USERNAME")
-		if adminUser == "" {
-			adminUser = "admin"
-		}
-		adminEmail := os.Getenv("ADMIN_EMAIL")
+	if err == nil && count == 0 && adminUser != "" && adminPass != "" {
 		if adminEmail == "" {
 			adminEmail = "admin@ota-robotics.internal"
-		}
-		adminPass := os.Getenv("ADMIN_PASSWORD")
-		if adminPass == "" {
-			adminPass = "Admin@OTA2026!"
 		}
 
 		hashedPass, err := auth.HashPassword(adminPass)

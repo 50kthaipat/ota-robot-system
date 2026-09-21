@@ -11,28 +11,25 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/minio/minio-go/v7"
 	db "github.com/ota-robot/api/internal/db/generated"
-	mymqtt "github.com/ota-robot/api/internal/mqtt"
-	"github.com/ota-robot/api/internal/orchestrator"
+	"github.com/ota-robot/api/internal/rollout"
 )
 
 type DeploymentHandler struct {
-	db                 *pgxpool.Pool
-	queries            *db.Queries
-	minio              *minio.Client
-	bucket             string
-	mqttClient         *mymqtt.Client
-	canaryOrchestrator *orchestrator.CanaryOrchestrator
+	db         *pgxpool.Pool
+	queries    *db.Queries
+	minio      *minio.Client
+	bucket     string
+	rolloutMgr *rollout.Manager
 }
 
-func NewDeploymentHandler(pool *pgxpool.Pool, mc *minio.Client, bucket string, mqttClient *mymqtt.Client) *DeploymentHandler {
+func NewDeploymentHandler(pool *pgxpool.Pool, mc *minio.Client, bucket string, rolloutMgr *rollout.Manager) *DeploymentHandler {
 	queries := db.New(pool)
 	return &DeploymentHandler{
-		db:                 pool,
-		queries:            queries,
-		minio:              mc,
-		bucket:             bucket,
-		mqttClient:         mqttClient,
-		canaryOrchestrator: orchestrator.NewCanaryOrchestrator(queries, mqttClient),
+		db:         pool,
+		queries:    queries,
+		minio:      mc,
+		bucket:     bucket,
+		rolloutMgr: rolloutMgr,
 	}
 }
 
@@ -160,12 +157,8 @@ func (h *DeploymentHandler) CreateDeployment(c fiber.Ctx) error {
 		"signature":       fw.EcdsaSignature.String,
 	}
 
-	if strategy == "canary" {
-		go h.canaryOrchestrator.Run(dep.ID, targetDevices, cmd)
-	} else {
-		for _, dev := range targetDevices {
-			_ = h.mqttClient.PublishCommand(dev.ID, cmd)
-		}
+	if err := h.rolloutMgr.StartRollout(ctx, dep.ID, strategy, targetDevices, cmd); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "failed to start rollout: " + err.Error()})
 	}
 
 	return c.Status(201).JSON(fiber.Map{
@@ -184,9 +177,15 @@ func (h *DeploymentHandler) GetDeployment(c fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	dep, err := h.queries.GetDeployment(ctx, pgtype.UUID{Bytes: depUUID, Valid: true})
+	depID := pgtype.UUID{Bytes: depUUID, Valid: true}
+	dep, err := h.queries.GetDeployment(ctx, depID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "deployment not found"})
+	}
+
+	// Reconcile status if terminal criteria are met
+	if reconciled, recErr := h.rolloutMgr.Reconcile(ctx, dep.ID); recErr == nil && reconciled != nil {
+		dep = *reconciled
 	}
 
 	devs, err := h.queries.ListDeploymentDevices(ctx, dep.ID)
@@ -198,26 +197,6 @@ func (h *DeploymentHandler) GetDeployment(c fiber.Ctx) error {
 	fw, err := h.queries.GetFirmwareVersion(ctx, dep.FirmwareVersionID)
 	if err == nil {
 		targetVersion = fw.Version
-	}
-
-	// Self-healing reconciliation: if all target devices succeeded/failed, ensure marked completed
-	if dep.TotalDevices > 0 && (dep.SuccessCount+dep.FailureCount >= dep.TotalDevices) && dep.Status != "rolled_back" && dep.Status != "failed" {
-		if dep.Status != "completed" {
-			_, _ = h.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
-				ID:     dep.ID,
-				Status: "completed",
-			})
-			dep.Status = "completed"
-		}
-		if dep.Strategy == "canary" && dep.CurrentPhase < 3 {
-			_, _ = h.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
-				ID:               dep.ID,
-				CurrentPhase:     3,
-				CanaryPercentage: 100,
-			})
-			dep.CurrentPhase = 3
-			dep.CanaryPercentage = 100
-		}
 	}
 
 	return c.JSON(fiber.Map{
@@ -241,26 +220,6 @@ func (h *DeploymentHandler) ListDeployments(c fiber.Ctx) error {
 
 	result := make([]DeploymentWithFW, 0, len(deps))
 	for _, d := range deps {
-		// Self-healing reconciliation for list view
-		if d.TotalDevices > 0 && (d.SuccessCount+d.FailureCount >= d.TotalDevices) && d.Status != "rolled_back" && d.Status != "failed" {
-			if d.Status != "completed" {
-				_, _ = h.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
-					ID:     d.ID,
-					Status: "completed",
-				})
-				d.Status = "completed"
-			}
-			if d.Strategy == "canary" && d.CurrentPhase < 3 {
-				_, _ = h.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
-					ID:               d.ID,
-					CurrentPhase:     3,
-					CanaryPercentage: 100,
-				})
-				d.CurrentPhase = 3
-				d.CanaryPercentage = 100
-			}
-		}
-
 		fwVer := ""
 		fw, err := h.queries.GetFirmwareVersion(ctx, d.FirmwareVersionID)
 		if err == nil {
@@ -282,36 +241,10 @@ func (h *DeploymentHandler) Rollback(c fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	dep, err := h.queries.GetDeployment(ctx, pgtype.UUID{Bytes: depUUID, Valid: true})
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "deployment not found"})
+	depID := pgtype.UUID{Bytes: depUUID, Valid: true}
+	if err := h.rolloutMgr.ExecuteRollback(ctx, depID, "manual_operator_request"); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "failed to execute rollback: " + err.Error()})
 	}
 
-	devs, err := h.queries.ListDeploymentDevices(ctx, dep.ID)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	for _, d := range devs {
-		prevVer := "1.0.0"
-		if d.PreviousVersion.Valid && d.PreviousVersion.String != "" {
-			prevVer = d.PreviousVersion.String
-		}
-		cmd := map[string]string{
-			"action":  "rollback",
-			"version": prevVer,
-		}
-		_ = h.mqttClient.PublishCommand(d.DeviceID, cmd)
-		_, _ = h.queries.UpdateDeviceVersion(ctx, db.UpdateDeviceVersionParams{
-			ID:             d.DeviceID,
-			CurrentVersion: prevVer,
-		})
-	}
-
-	_, _ = h.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
-		ID:     dep.ID,
-		Status: "rolled_back",
-	})
-
-	return c.JSON(fiber.Map{"status": "rolled_back", "deployment_id": dep.ID})
+	return c.JSON(fiber.Map{"status": "rolled_back", "deployment_id": depID})
 }

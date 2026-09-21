@@ -10,12 +10,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	db "github.com/ota-robot/api/internal/db/generated"
+	"github.com/ota-robot/api/internal/rollout"
 )
 
 type Client struct {
 	mqttClient mqtt.Client
 	dbPool     *pgxpool.Pool
 	queries    *db.Queries
+	rolloutMgr *rollout.Manager
 }
 
 func NewClient(mqttClient mqtt.Client, pool *pgxpool.Pool) *Client {
@@ -24,6 +26,10 @@ func NewClient(mqttClient mqtt.Client, pool *pgxpool.Pool) *Client {
 		dbPool:     pool,
 		queries:    db.New(pool),
 	}
+}
+
+func (c *Client) SetRolloutManager(mgr *rollout.Manager) {
+	c.rolloutMgr = mgr
 }
 
 func (c *Client) Subscribe() {
@@ -98,52 +104,13 @@ func (c *Client) handleProgress(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 
-	ctx := context.Background()
-	activeDD, err := c.queries.GetActiveDeploymentDeviceByDevice(ctx, payload.DeviceID)
-	if err != nil {
-		return
-	}
-
-	// If this unit already reached terminal state, do not overwrite or duplicate count
-	if activeDD.Status == "success" || activeDD.Status == "failed" {
-		return
-	}
-
-	_, _ = c.queries.UpdateDeploymentDeviceStatus(ctx, db.UpdateDeploymentDeviceStatusParams{
-		DeploymentID: activeDD.DeploymentID,
-		DeviceID:     payload.DeviceID,
-		Status:       payload.Status,
-		Progress:     payload.Progress,
-		ErrorMessage: pgtype.Text{Valid: false},
-	})
-
-	if payload.Status == "success" && payload.Progress == 100 {
-		dep, err := c.queries.GetDeployment(ctx, activeDD.DeploymentID)
-		if err == nil {
-			if dep.Status == "rolled_back" {
-				return
-			}
-			_ = c.queries.IncrementDeploymentSuccess(ctx, activeDD.DeploymentID)
-			fw, err := c.queries.GetFirmwareVersion(ctx, dep.FirmwareVersionID)
-			if err == nil {
-				_, _ = c.queries.UpdateDeviceVersion(ctx, db.UpdateDeviceVersionParams{
-					ID:             payload.DeviceID,
-					CurrentVersion: fw.Version,
-				})
-			}
-			if dep.SuccessCount+dep.FailureCount >= dep.TotalDevices {
-				_, _ = c.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
-					ID:     activeDD.DeploymentID,
-					Status: "completed",
-				})
-				if dep.Strategy == "canary" {
-					_, _ = c.queries.UpdateDeploymentPhase(ctx, db.UpdateDeploymentPhaseParams{
-						ID:               activeDD.DeploymentID,
-						CurrentPhase:     3,
-						CanaryPercentage: 100,
-					})
-				}
-			}
+	if c.rolloutMgr != nil {
+		if err := c.rolloutMgr.HandleDeviceProgress(context.Background(), rollout.DeviceProgressEvent{
+			DeviceID: payload.DeviceID,
+			Status:   payload.Status,
+			Progress: payload.Progress,
+		}); err != nil {
+			log.Printf("[mqtt] rollout HandleDeviceProgress notice: %v", err)
 		}
 	}
 }
@@ -159,60 +126,12 @@ func (c *Client) handleError(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 
-	ctx := context.Background()
-	activeDD, err := c.queries.GetActiveDeploymentDeviceByDevice(ctx, payload.DeviceID)
-	if err != nil {
-		return
-	}
-
-	if activeDD.Status == "success" || activeDD.Status == "failed" {
-		return
-	}
-
-	_, _ = c.queries.UpdateDeploymentDeviceStatus(ctx, db.UpdateDeploymentDeviceStatusParams{
-		DeploymentID: activeDD.DeploymentID,
-		DeviceID:     payload.DeviceID,
-		Status:       "failed",
-		Progress:     activeDD.Progress,
-		ErrorMessage: pgtype.Text{String: payload.Error, Valid: true},
-	})
-	_ = c.queries.IncrementDeploymentFailure(ctx, activeDD.DeploymentID)
-
-	dep, err := c.queries.GetDeployment(ctx, activeDD.DeploymentID)
-	if err == nil {
-		failureRate := float64(dep.FailureCount) / float64(dep.TotalDevices)
-		if dep.Status == "running" && failureRate >= dep.RollbackThreshold {
-			log.Printf("[AUTO-ROLLBACK TRIGGERED] Deployment %v failure rate %.2f breached threshold %.2f", dep.ID, failureRate, dep.RollbackThreshold)
-			_, _ = c.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
-				ID:     dep.ID,
-				Status: "rolled_back",
-			})
-			devs, err := c.queries.ListDeploymentDevices(ctx, dep.ID)
-			if err == nil {
-				for _, d := range devs {
-					prevVer := "1.0.0"
-					if d.PreviousVersion.Valid && d.PreviousVersion.String != "" {
-						prevVer = d.PreviousVersion.String
-					}
-					rollbackCmd := map[string]string{
-						"action":  "rollback",
-						"version": prevVer,
-					}
-					_ = c.PublishCommand(d.DeviceID, rollbackCmd)
-					_, _ = c.queries.UpdateDeviceVersion(ctx, db.UpdateDeviceVersionParams{
-						ID:             d.DeviceID,
-						CurrentVersion: prevVer,
-					})
-				}
-			}
-			return
-		}
-
-		if dep.SuccessCount+dep.FailureCount >= dep.TotalDevices {
-			_, _ = c.queries.UpdateDeploymentStatus(ctx, db.UpdateDeploymentStatusParams{
-				ID:     activeDD.DeploymentID,
-				Status: "completed",
-			})
+	if c.rolloutMgr != nil {
+		if err := c.rolloutMgr.HandleDeviceError(context.Background(), rollout.DeviceErrorEvent{
+			DeviceID: payload.DeviceID,
+			Error:    payload.Error,
+		}); err != nil {
+			log.Printf("[mqtt] rollout HandleDeviceError notice: %v", err)
 		}
 	}
 }

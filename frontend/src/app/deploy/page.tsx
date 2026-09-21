@@ -13,6 +13,14 @@ import { api } from "@/lib/api";
 import { Device, FirmwareVersion, getErrorMessage } from "@/lib/types";
 import { useToast } from "@/context/ToastContext";
 import { DeployRiskModal } from "@/components/DeployRiskModal";
+import {
+  deriveFactories,
+  deriveEligibleDevices,
+  deriveTargetDevices,
+  prepareDeploymentPayload,
+  TargetScope,
+  RolloutStrategy,
+} from "@/lib/planning";
 
 function DeployForm() {
   const router = useRouter();
@@ -24,10 +32,10 @@ function DeployForm() {
   const [firmwares, setFirmwares] = useState<FirmwareVersion[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedFwId, setSelectedFwId] = useState<string>("");
-  const [targetScope, setTargetScope] = useState<"all" | "factory" | "custom">("factory");
+  const [targetScope, setTargetScope] = useState<TargetScope>("factory");
   const [selectedFactory, setSelectedFactory] = useState<string>("");
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
-  const [strategy, setStrategy] = useState<"full" | "canary">("canary");
+  const [strategy, setStrategy] = useState<RolloutStrategy>("canary");
   const [rollbackThreshold, setRollbackThreshold] = useState<number>(20);
   const [loading, setLoading] = useState<boolean>(true);
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
@@ -60,30 +68,18 @@ function DeployForm() {
     fetchData();
   }, [preselectedFw, preselectedDevice]);
 
-  const factories = useMemo(() => {
-    const s = new Set<string>();
-    devices.forEach((d) => s.add(d.factory_id));
-    const arr = Array.from(s);
-    return arr;
-  }, [devices]);
+  const factories = useMemo(() => deriveFactories(devices), [devices]);
 
   useEffect(() => {
     if (!selectedFactory && factories.length > 0) setSelectedFactory(factories[0]);
   }, [factories, selectedFactory]);
 
-  const eligibleDevices = useMemo(() => {
-    return devices.filter((d) => d.status === "online");
-  }, [devices]);
+  const eligibleDevices = useMemo(() => deriveEligibleDevices(devices), [devices]);
 
-  const targetDevices = useMemo(() => {
-    if (targetScope === "all") {
-      return eligibleDevices;
-    }
-    if (targetScope === "factory") {
-      return eligibleDevices.filter((d) => d.factory_id === selectedFactory);
-    }
-    return eligibleDevices.filter((d) => selectedDeviceIds.includes(d.id));
-  }, [targetScope, eligibleDevices, selectedFactory, selectedDeviceIds]);
+  const targetDevices = useMemo(
+    () => deriveTargetDevices(eligibleDevices, targetScope, selectedFactory, selectedDeviceIds),
+    [eligibleDevices, targetScope, selectedFactory, selectedDeviceIds]
+  );
 
   const selectedFw = useMemo(() => {
     return firmwares.find((f) => f.id === selectedFwId);
@@ -134,13 +130,20 @@ function DeployForm() {
     setError(null);
 
     try {
-      const payload = {
-        firmware_id: selectedFwId,
-        strategy: strategy,
-        device_ids: targetDevices.map((d) => d.id),
-        hw_model: targetDevices[0].hw_model,
-        rollback_threshold: rollbackThreshold / 100,
-      };
+      const payload = prepareDeploymentPayload(
+        {
+          selectedFwId,
+          targetScope,
+          selectedFactory,
+          selectedDeviceIds,
+          strategy,
+          rollbackThreshold,
+        },
+        targetDevices
+      );
+      if (targetDevices.length > 0) {
+        payload.hw_model = targetDevices[0].hw_model;
+      }
 
       const res = await api.createDeployment(payload);
       setIsRiskModalOpen(false);

@@ -15,17 +15,29 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
-async function refreshSession(): Promise<boolean> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-    });
-    return response.ok;
-  } catch {
-    return false;
+let activeRefreshPromise: Promise<boolean> | null = null;
+
+async function coordinatedRefresh(): Promise<boolean> {
+  if (activeRefreshPromise) {
+    return activeRefreshPromise;
   }
+
+  activeRefreshPromise = (async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      });
+      return response.ok;
+    } catch {
+      return false;
+    } finally {
+      activeRefreshPromise = null;
+    }
+  })();
+
+  return activeRefreshPromise;
 }
 
 async function fetchJSON<T>(url: string, init?: RequestInit, retry = true): Promise<T> {
@@ -33,6 +45,11 @@ async function fetchJSON<T>(url: string, init?: RequestInit, retry = true): Prom
     Accept: "application/json",
     ...((init?.headers as Record<string, string>) || {}),
   };
+
+  // If body is FormData, remove Content-Type to let browser generate multipart boundary
+  if (init?.body instanceof FormData) {
+    delete headers["Content-Type"];
+  }
 
   const response = await fetch(`${BASE_URL}${url}`, {
     ...init,
@@ -43,7 +60,10 @@ async function fetchJSON<T>(url: string, init?: RequestInit, retry = true): Prom
 
   const isAuthMutation = url.includes("/login") || url.includes("/refresh") || url.includes("/logout");
   if (response.status === 401 && retry && !isAuthMutation) {
-    if (await refreshSession()) return fetchJSON<T>(url, init, false);
+    const refreshed = await coordinatedRefresh();
+    if (refreshed) {
+      return fetchJSON<T>(url, init, false);
+    }
   }
 
   if (!response.ok) {
@@ -122,20 +142,10 @@ export const api = {
   },
 
   async uploadFirmware(formData: FormData): Promise<FirmwareVersion> {
-    const response = await fetch(`${BASE_URL}/api/v1/firmware/upload`, {
+    return fetchJSON<FirmwareVersion>("/api/v1/firmware/upload", {
       method: "POST",
-      credentials: "include",
       body: formData,
     });
-    if (!response.ok) {
-      let message = `Upload failed (${response.status} ${response.statusText})`;
-      try {
-        const data = await response.json();
-        if (data.error) message = data.error;
-      } catch {}
-      throw new Error(message);
-    }
-    return response.json();
   },
 
   async getFirmwareDownloadURL(id: string): Promise<{ url: string; checksum: string }> {
