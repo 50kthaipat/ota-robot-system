@@ -4,6 +4,72 @@ A control plane and edge agent platform for managing over-the-air (OTA) firmware
 
 This project is an experimental prototype and research testbed for fleet orchestration. It is not an IEC 61508 or ISO 10218 safety-certified industrial controller.
 
+## System Architecture
+
+The platform follows a decoupled control plane and edge agent architecture with an out-of-band artifact delivery pipeline:
+
+```text
+                     +---------------------------------------------------+
+                     |              OPERATOR WORKSTATION                 |
+                     |  Next.js 15 Dashboard (TypeScript, Tailwind CSS)  |
+                     +-------------------------+-------------------------+
+                                               |
+                                HTTPS (REST)   | Single-Flight Auth
+                                               v
++-----------------------------------------------------------------------------------------+
+|                               CONTROL PLANE (Go / Fiber v3)                             |
+|                                                                                         |
+|  +-------------------+  +--------------------+  +------------------+  +--------------+  |
+|  |  Session / Auth   |  |  Firmware Release  |  | Rollout Engine   |  | Fleet Gauges |  |
+|  |  (Argon2id, JWT,  |  |  (Magic Bytes,     |  | (Canary FSM:     |  | & Metrics    |  |
+|  |   Secure Cookies) |  |   SHA-256, ECDSA)  |  |  20%->60%->100%) |  | (/metrics)   |  |
+|  +---------+---------+  +---------+----------+  +--------+---------+  +-------+------+  |
++------------|----------------------|----------------------|--------------------|---------+
+             |                      |                      |                    |
+             v                      v                      v                    v
+      [PostgreSQL 16]         [MinIO / R2]          [EMQX MQTT 5]         [Prometheus]
+     (Fleet Registry,       (Signed Binaries,     (Topics: commands,     (Telemetry &
+      Deployments, Audit)    Presigned URLs)       telemetry, errors)      Health Scrape)
+                                                           |
+                                            MQTT 5.0 (QoS 1)
+                                                           |
+             +---------------------------------------------+-----------------------+
+             |                                                                     |
+             v                                                                     v
++------------------------------------------+         +------------------------------------------+
+|          ROBOT FLEET - FACTORY A         |         |          ROBOT FLEET - FACTORY B         |
+|                                          |         |                                          |
+|  +------------------------------------+  |         |  +------------------------------------+  |
+|  |       Autonomous Mobile Robot      |  |         |  |       Autonomous Mobile Robot      |  |
+|  |  +------------------------------+  |  |         |  |  +------------------------------+  |  |
+|  |  |   OTA Edge Agent (Go FSM)    |  |  |         |  |  |   OTA Edge Agent (Go FSM)    |  |  |
+|  |  | - MQTT State & Telemetry     |  |  |         |  |  | - MQTT State & Telemetry     |  |  |
+|  |  | - S3 Presigned Downloader    |  |  |         |  |  | - S3 Presigned Downloader    |  |  |
+|  |  | - ECDSA P-256 Verify (Root)  |  |  |         |  |  | - ECDSA P-256 Verify (Root)  |  |  |
+|  |  | - A/B Slot Flash Controller  |  |  |         |  |  | - A/B Slot Flash Controller  |  |  |
+|  |  +------------------------------+  |  |         |  |  +------------------------------+  |  |
+|  +------------------------------------+  |         |  +------------------------------------+  |
++------------------------------------------+         +------------------------------------------+
+```
+
+### Component Breakdown
+
+1. **Web Dashboard (`frontend/`)**: Next.js 15 (App Router) interface for operator fleet tracking, binary release uploads, canary stage execution, and manual emergency rollback. Communicates with the control plane via single-flight authenticated REST (`activeRefreshPromise`).
+2. **Control Plane (`backend/`)**: Modular Go API service powered by Fiber v3:
+   - `internal/rollout`: Coordinates canary lifecycle progression (20% → 60% → 100%), failure threshold monitoring, and auto-rollback execution.
+   - `internal/firmware`: Validates binary format (magic bytes, size bounds, script detection), signs payloads using ECDSA P-256, and atomically uploads binaries to object storage with compensating cleanup.
+   - `internal/config`: Enforces fail-fast production invariants and blocks insecure default secrets.
+   - `internal/middleware`: Enforces role-based permissions (`admin`, `operator`) and protects `/metrics` with `METRICS_TOKEN`.
+   - `internal/mqtt`: Dispatches update commands and collects device telemetry via MQTT 5.0 QoS 1.
+3. **Storage & Infrastructure Plane (`infra/`)**:
+   - **PostgreSQL 16**: Relational storage for fleet device records, deployment histories, and audit logs.
+   - **MinIO / Cloud Object Storage**: Segregated binary storage. Edge robots fetch binaries directly via short-lived (15-minute) presigned URLs rather than routing binary blobs through the API host.
+   - **EMQX Broker**: Low-latency message broker maintaining MQTT persistent sessions and command delivery.
+   - **Prometheus & Grafana**: Time-series telemetry scraping and fleet status visualization.
+4. **Edge Robot Agent (`simulator/`)**: Embedded Go daemon executing a deterministic finite state machine (FSM):
+   - **States**: `IDLE` → `DOWNLOADING` → `VERIFYING` → `INSTALLING` → `REBOOTING` → `ONLINE`
+   - **Fault Isolation**: Fails closed if the public key is missing or signature verification fails, automatically transitioning to `ROLLING_BACK` to preserve fleet uptime.
+
 ## Repository Structure
 
 | Directory | Description |
