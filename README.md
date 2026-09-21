@@ -1,57 +1,104 @@
 # OTA Robot Fleet Management System
 
-ระบบทดลองสำหรับจัดการการอัปเดตเฟิร์มแวร์หุ่นยนต์ผ่านเครือข่าย: อัปโหลดและเซ็นเฟิร์มแวร์, เลือกกลุ่มเป้าหมาย, ติดตาม rollout/rollback และดู telemetry ผ่าน dashboard. โครงการนี้เป็นต้นแบบเพื่อการศึกษาและการทดลอง **ไม่ใช่ระบบควบคุมโรงงานที่ผ่านการรับรองสำหรับ production**.
+A control plane and edge agent platform for managing over-the-air (OTA) firmware updates across industrial robot fleets. Features cryptographic signature verification (ECDSA P-256), staged canary rollouts (20% → 60% → 100%), automated rollback on failure, and real-time fleet telemetry.
 
-## โครงสร้าง
+This project is an experimental prototype and research testbed for fleet orchestration. It is not an IEC 61508 or ISO 10218 safety-certified industrial controller.
 
-| ส่วน | หน้าที่ |
+## Repository Structure
+
+| Directory | Description |
 | --- | --- |
-| `backend/` | Go/Fiber API, PostgreSQL, MQTT, การเซ็น ECDSA และ rollout |
-| `frontend/` | Next.js 15 dashboard พร้อมหน้า login, fleet, firmware, deployments |
-| `simulator/` | ตัวจำลองหุ่นยนต์ที่รับคำสั่ง MQTT และตรวจลายเซ็น |
-| `infra/` | Prometheus และ Grafana configuration/dashboards |
-| `scripts/`, `ml/` | เครื่องมือทดลอง วิเคราะห์ผล และฝึกโมเดล (บางส่วนเป็นงานวิจัยที่กำลังพัฒนา) |
-| `docs/` | เอกสารสถาปัตยกรรม การติดตั้ง และแผนการทดลอง |
-| `.github/` | CI และ Dependabot configuration |
+| `backend/` | Go Fiber v3 API, PostgreSQL storage, MQTT coordinator, ECDSA signing service, rollout state machine |
+| `frontend/` | Next.js 15 dashboard (App Router, Tailwind CSS, TypeScript) for fleet monitoring and deployment operations |
+| `simulator/` | Autonomous mobile robot (AMR) agent simulator with local FSM, MQTT client, and signature verification |
+| `infra/` | Docker configurations, Prometheus scraper configs, and Grafana dashboard templates |
+| `scripts/` | Key generation utilities, empirical benchmark harnesses (scenarios 1–5), and dataset processors |
+| `ml/` | Anomaly detection and linear regression pipelines for firmware failure prediction |
+| `docs/` | System architecture, API and MQTT contracts, operational guides, and academic experimental protocols |
+| `security/` | Vulnerability assessment records and historical audit documentation |
 
-## เริ่มใช้งานในเครื่อง
+## Prerequisites
 
-ต้องมี Docker พร้อม Compose v2. คำสั่งตัวอย่างสำหรับ PowerShell:
+- Docker and Docker Compose v2
+- Go 1.22+ (for running Go test suites or host services)
+- Node.js 20+ and npm 10+ (for frontend dashboard development)
 
-```powershell
-Copy-Item .env.example .env
-# เฉพาะเมื่อยังไม่มี keys/private.pem: go run scripts/gen_keys.go
-docker compose up -d --build
-docker compose ps
+## Quickstart (Local Docker)
+
+1. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   ```
+   Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env`.
+
+2. **Generate cryptographic signing keys:**
+   If `keys/private.pem` does not already exist:
+   ```bash
+   go run scripts/gen_keys.go
+   ```
+   This generates an ECDSA P-256 keypair in the `keys/` directory. The private key must remain secret and is ignored by Git.
+
+3. **Start the local stack:**
+   ```bash
+   docker compose up -d --build
+   docker compose ps
+   ```
+
+4. **Access local services:**
+
+| Service | Address | Credentials / Notes |
+| --- | --- | --- |
+| Dashboard | http://localhost:3000 | Configured `ADMIN_USERNAME` / `ADMIN_PASSWORD` |
+| Backend API | http://localhost:8000 | Health check: `http://localhost:8000/health` |
+| Metrics | http://localhost:8000/metrics | Protected in production (`METRICS_TOKEN`); loopback allowed in dev |
+| Grafana | http://localhost:3001 | Anonymous admin enabled for local demo |
+| Prometheus | http://localhost:9090 | Scrapes API and EMQX |
+| EMQX Dashboard | http://localhost:18083 | Default: `admin` / `public` |
+| MinIO Console | http://localhost:9001 | Default: `minioadmin` / `minioadmin` |
+
+## Running Tests
+
+Run the backend, simulator, and frontend test suites locally:
+
+```bash
+# Backend unit tests
+cd backend && go test -count=1 ./...
+
+# Robot simulator agent tests
+cd ../simulator && go test -count=1 ./...
+
+# Frontend linting and production build
+cd ../frontend && npm ci && npm run lint && npm run build
 ```
 
-เปิด dashboard ที่ <http://localhost:3000> และตรวจ API ที่ <http://localhost:8000/health>. การเรียก `/api/v1/*` ที่จัดการ fleet ต้องเข้าสู่ระบบ; ตั้งค่า `ADMIN_USERNAME` และ `ADMIN_PASSWORD` ใน `.env` ก่อนเริ่มระบบ และเปลี่ยนค่าตัวอย่างทุกครั้ง. ถ้าไม่มี `keys/private.pem` ให้สร้างคู่คีย์ก่อนเริ่มระบบ; การเปลี่ยนคีย์จะทำให้เฟิร์มแวร์ที่เซ็นด้วยคีย์เดิมตรวจสอบไม่ผ่าน. ดู [คู่มือการติดตั้ง](docs/operations/SETUP_LOCAL.md) หากต้องการรายละเอียดเพิ่มเติม (บางตัวอย่างคำสั่ง API ในคู่มือเดิมยังไม่รวมขั้นตอน login).
+## Security and Production Deployment
 
-| บริการสำหรับการทดลองในเครื่อง | URL |
-| --- | --- |
-| Dashboard | <http://localhost:3000> |
-| API health | <http://localhost:8000/health> |
-| Grafana | <http://localhost:3001> |
-| Prometheus | <http://localhost:9090> |
-| EMQX console | <http://localhost:18083> |
-| MinIO console | <http://localhost:9001> |
+- **Fail-Closed Signing:** Production (`APP_ENV=production`) requires explicit signing keys passed via environment variables (`ECDSA_PRIVATE_KEY_B64`, `ECDSA_PRIVATE_KEY_PEM`) or secure key file paths. The system fails closed if signing keys are missing or invalid.
+- **Key Compromise Notice:** Legacy development keys found in Git history are compromised and must not be used in any physical deployment. Generate a fresh keypair and distribute the public key to edge nodes out-of-band before deployment.
+- **Session Security:** JWT access tokens expire after 15 minutes. Refresh tokens are stored in `HttpOnly; SameSite=Strict` cookies. Production mode strictly enforces `Secure: true`.
+- **Metrics Protection:** The Prometheus `/metrics` route enforces bearer token authentication when `METRICS_TOKEN` is set, and requires configuration in production.
+- **Local Demo Isolation:** The default `docker-compose.yml` includes demo credentials, anonymous MQTT, and an unauthenticated Grafana admin role. Never expose this demo configuration to untrusted networks. See [SECURITY.md](SECURITY.md).
 
-> `docker-compose.yml` ใช้รหัสผ่านสาธิต, MQTT แบบไม่ยืนยันตัวตน และ Grafana anonymous admin. ใช้เฉพาะบนเครือข่ายที่เชื่อถือได้ ห้ามนำ configuration นี้ขึ้น production โดยตรง. เก็บ `.env` และ `keys/private.pem` ไว้นอก Git. ดู [นโยบายความปลอดภัย](SECURITY.md).
+## Empirical Research Suite
 
-## ตรวจสอบโค้ด
+The `scripts/` directory contains an empirical benchmarking suite evaluating five operational scenarios:
 
+1. `scripts/benchmark_crypto.go`: SHA-256 digest scaling vs. ECDSA P-256 signature verification overhead.
+2. `scripts/benchmark_security.py`: Zero-trust rejection rates against tampered payloads and unauthorized releases.
+3. `scripts/benchmark_resilience_ab.py`: A/B resilience testing comparing canary staged rollout against global all-at-once deployment (evaluated via Mann-Whitney U test in `scripts/statistical_analysis.py`).
+4. `scripts/benchmark_network.py`: OTA download reliability and latency distribution under network degradation.
+5. `scripts/benchmark_concurrency.py`: Control plane throughput and concurrency scaling across virtual robot fleets.
+
+Run all benchmark scenarios via:
 ```powershell
-Push-Location backend; go test ./...; Pop-Location
-Push-Location simulator; go test ./...; Pop-Location
-Push-Location frontend; npm ci; npm run build; Pop-Location
+.\scripts\run_new_experiments.ps1
 ```
 
-CI ทดสอบ Go ทั้งสองโมดูล, build frontend และตรวจ Docker images เมื่อ push/เปิด PR ไปยัง `main`. การ deploy จาก `main` จะเรียก webhook เฉพาะเมื่อกำหนด GitHub Actions secret ชื่อ `RENDER_DEPLOY_HOOK`.
+## Documentation
 
-## เอกสาร
-
-- [สารบัญเอกสาร](docs/README.md), [สถาปัตยกรรม](docs/design/ARCHITECTURE.md), [API และ MQTT](docs/design/API_AND_MQTT_SPEC.md)
-- [ติดตั้งในเครื่อง](docs/operations/SETUP_LOCAL.md), [ติดตั้งบน Cloud](docs/operations/SETUP_CLOUD.md)
-- [แผนการทดลอง](docs/academic/EXPERIMENTAL_PLAN.md), [รายงาน audit เดิม](security/audit_report.md)
-
-รายงาน audit เดิมเป็น snapshot ณ 11 กันยายน 2026; ข้อค้นพบหลายรายการถูกแก้ในโค้ดหลังจากนั้นแล้ว และไม่ควรใช้แทนการตรวจ security/Dependabot alerts ปัจจุบันบน GitHub.
+- [System Architecture](docs/design/ARCHITECTURE.md)
+- [API and MQTT Specifications](docs/design/API_AND_MQTT_SPEC.md)
+- [Local Development Setup](docs/operations/SETUP_LOCAL.md)
+- [Cloud Deployment Guide](docs/operations/SETUP_CLOUD.md)
+- [Academic Experimental Plan](docs/academic/EXPERIMENTAL_PLAN.md)
+- [Security Policy](SECURITY.md)
