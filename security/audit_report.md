@@ -1,4 +1,7 @@
 # รายงานการประเมินความมั่นคงปลอดภัยของระบบ (Automated Security Audit Report)
+
+> **หมายเหตุ ณ 21 กันยายน 2026:** เอกสารนี้เป็นบันทึกผลตรวจเดิม ณ วันที่ 11 กันยายน ไม่ใช่สถานะปัจจุบันของโค้ดหรือ GitHub Security alerts. บางข้อได้รับการแก้ไขหลังการประเมิน แต่พบคีย์ ECDSA สำหรับการเซ็นที่เคยฝังใน source code ด้วย จึงต้องถือว่าคีย์เดิมรั่วและหมุนเวียนคีย์ก่อนใช้งานจริง ดู [SECURITY.md](../SECURITY.md).
+
 **โครงการ:** OTA Robot Fleet Management System (`ota-robot-system`)  
 **กรอบการประเมิน:** OWASP Top 10 & `vibe-check` (17 Vulnerability Categories)  
 **วันที่ประเมิน:** 11 กันยายน 2026  
@@ -132,4 +135,3 @@
    * ลบหมายเลข HiveMQ Cloud Cluster และชื่อผู้ใช้ส่วนตัวออกจาก `docker-compose.cloud-fleet.yml` โดยเปลี่ยนเป็น Generic Placeholders
 5. **การขยายกฎความปลอดภัยใน `.gitignore`:**
    * ครอบคลุมไฟล์ความลับและกุญแจทุกประเภท ได้แก่ `*.key`, `*private*.pem`, `*.pfx`, `*.p12`, `*.pkcs8`, `id_rsa*`, `id_ecdsa*`, `.env.*` (ยกเว้น `.env.example`) และโฟลเดอร์ `secrets/`
-

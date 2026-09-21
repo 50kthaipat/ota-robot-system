@@ -1,123 +1,57 @@
-# Cloud-Based OTA Firmware Management Platform for Robot Fleet
+# OTA Robot Fleet Management System
 
-An **Over-The-Air (OTA) Firmware Management Platform** designed to securely orchestrate, deploy, monitor, and roll back firmware across distributed industrial robot fleets in multi-factory environments.
+ระบบทดลองสำหรับจัดการการอัปเดตเฟิร์มแวร์หุ่นยนต์ผ่านเครือข่าย: อัปโหลดและเซ็นเฟิร์มแวร์, เลือกกลุ่มเป้าหมาย, ติดตาม rollout/rollback และดู telemetry ผ่าน dashboard. โครงการนี้เป็นต้นแบบเพื่อการศึกษาและการทดลอง **ไม่ใช่ระบบควบคุมโรงงานที่ผ่านการรับรองสำหรับ production**.
 
----
+## โครงสร้าง
 
-## 1. Monorepo Architecture & Separation
+| ส่วน | หน้าที่ |
+| --- | --- |
+| `backend/` | Go/Fiber API, PostgreSQL, MQTT, การเซ็น ECDSA และ rollout |
+| `frontend/` | Next.js 15 dashboard พร้อมหน้า login, fleet, firmware, deployments |
+| `simulator/` | ตัวจำลองหุ่นยนต์ที่รับคำสั่ง MQTT และตรวจลายเซ็น |
+| `infra/` | Prometheus และ Grafana configuration/dashboards |
+| `scripts/`, `ml/` | เครื่องมือทดลอง วิเคราะห์ผล และฝึกโมเดล (บางส่วนเป็นงานวิจัยที่กำลังพัฒนา) |
+| `docs/` | เอกสารสถาปัตยกรรม การติดตั้ง และแผนการทดลอง |
+| `.github/` | CI และ Dependabot configuration |
 
-The repository is structured as a modular Monorepo cleanly separating Frontend, Backend, Edge Simulation, Infrastructure, and Documentation:
+## เริ่มใช้งานในเครื่อง
 
-```
-ota-robot-system/
-├── backend/                    # BACKEND: Go + Fiber v3 Control Plane
-│   ├── internal/               # Clean Architecture (crypto, db, handlers, mqtt, orchestrator)
-│   └── README.md               # Backend developer & testing guide
-│
-├── frontend/                   # FRONTEND: Next.js 14 + Tailwind CSS Web App
-│   ├── src/app/                # App Router pages (fleet overview, deploy wizard, canary inspector)
-│   ├── src/components/         # Cyber-Dark UI component library
-│   └── README.md               # Frontend developer & design guide
-│
-├── simulator/                  # EDGE: Robot Fleet Simulator (MQTT 5.0 + ECDSA Verification)
-│   └── README.md               # Robot fleet simulation guide
-│
-├── infra/                      # Infrastructure & Telemetry Stack
-│   ├── emqx/                   # EMQX MQTT 5.0 broker configuration
-│   ├── grafana/                # Provisioned Grafana datasources & 4 custom dashboards
-│   └── prometheus/             # Prometheus metric scrape configs (API & MQTT)
-│
-├── docs/                       # Technical & Academic Documentation
-│   ├── README.md               # Master documentation index
-│   ├── academic/               # Academic thesis specifications (Proposal & Experimental Plan)
-│   ├── design/                 # Architecture, API & MQTT specs, Database schema, Crypto
-│   └── operations/             # Local Docker setup, Cloud deploy guide, Tasks roadmap
-│
-├── scripts/                    # Automation & Benchmarking
-│   ├── k6/                     # k6 load testing script & results
-│   ├── run_experiments.ps1     # Automated runner across all 5 simulation scenarios
-│   ├── statistical_analysis.py # Statistical testing script (Shapiro-Wilk, Mann-Whitney U)
-│   └── gen_keys.go             # Cryptographic ECDSA P-256 keypair generator
-│
-├── .github/workflows/          # CI/CD Automation
-│   └── ci.yml                  # Unified GitHub Actions pipeline (Go, Next.js, Docker, Deploy)
-├── docker-compose.yml          # Full-stack composition
-└── .gitignore                  # Production Git ignore rules
-```
+ต้องมี Docker พร้อม Compose v2. คำสั่งตัวอย่างสำหรับ PowerShell:
 
----
-
-## 2. Core Engineering Features
-
-```mermaid
-graph TD
-    User([Factory Operator / Engineer]) -->|HTTPS| Web[Next.js 14 Dashboard :3000]
-    Web -->|REST / WebSocket| API[Go Fiber v3 Backend :8000]
-    API -->|Presigned URL| MinIO[(MinIO Object Storage :9000)]
-    API -->|State & Audit| DB[(PostgreSQL 16 :5432)]
-    API -->|MQTT Command / QoS 1| EMQX{EMQX MQTT Broker :1883}
-    EMQX -->|Telemetry / Status| API
-    EMQX <-->|OTA Channel| Fleet[Robot Fleet: SCARA, Delta, Articulated, Cartesian, AGV]
-    Prometheus[Prometheus :9090] -->|Scrapes Metrics| API
-    Prometheus -->|Scrapes Broker| EMQX
-    Grafana[Grafana :3001] -->|Visualizes| Prometheus
-```
-
-1. **NIST P-256 ECDSA Digital Signatures:** Every firmware binary is hashed (SHA-256) and digitally signed with an elliptic curve private key before distribution. Robot edge controllers verify the cryptographic signature against an embedded root-of-trust public key before installation, preventing tampered firmware injections.
-2. **3-Phase Canary Rollout Engine:** Deploys firmware gradually across 3 risk-mitigated stages (**20% -> 60% -> 100%**) with automated health monitoring at each phase.
-3. **Automated Rollback Mechanism:** Background watchdogs continuously evaluate robot telemetry heartbeats. If a node reports failures or fails post-update healthchecks, the system automatically triggers a rollback command, reverting the robot to its golden image.
-4. **Full-Stack Observability:** 4 automated Grafana dashboards track fleet status, rollout gauges, API latencies (p50/p95/p99), and factory compliance.
-5. **Automated CI/CD Pipeline:** Configured on GitHub Actions with unit tests, Next.js production builds, and multi-container Docker image verification.
-
----
-
-## 3. Quick Start (Local Deployment)
-
-### Step 1: Configure Environment
-```bash
-cp .env.example .env
-```
-
-### Step 2: Start Full Fleet Stack
-```bash
+```powershell
+Copy-Item .env.example .env
+# เฉพาะเมื่อยังไม่มี keys/private.pem: go run scripts/gen_keys.go
 docker compose up -d --build
+docker compose ps
 ```
 
-### Step 3: Service Ports & Access Points
-| Service | URL | Default Credentials |
-|---|---|---|
-| **Fleet Web Dashboard** | [http://localhost:3000](http://localhost:3000) | No login required |
-| **Backend REST API** | [http://localhost:8000](http://localhost:8000) | Health: `/health` |
-| **Grafana Observability** | [http://localhost:3001](http://localhost:3001) | Anonymous Admin Enabled |
-| **Prometheus Metrics** | [http://localhost:9090](http://localhost:9090) | No login required |
-| **EMQX MQTT Console** | [http://localhost:18083](http://localhost:18083) | `admin` / `public` |
-| **MinIO Object Console** | [http://localhost:9001](http://localhost:9001) | `minioadmin` / `minioadmin` |
+เปิด dashboard ที่ <http://localhost:3000> และตรวจ API ที่ <http://localhost:8000/health>. การเรียก `/api/v1/*` ที่จัดการ fleet ต้องเข้าสู่ระบบ; ตั้งค่า `ADMIN_USERNAME` และ `ADMIN_PASSWORD` ใน `.env` ก่อนเริ่มระบบ และเปลี่ยนค่าตัวอย่างทุกครั้ง. ถ้าไม่มี `keys/private.pem` ให้สร้างคู่คีย์ก่อนเริ่มระบบ; การเปลี่ยนคีย์จะทำให้เฟิร์มแวร์ที่เซ็นด้วยคีย์เดิมตรวจสอบไม่ผ่าน. ดู [คู่มือการติดตั้ง](docs/operations/SETUP_LOCAL.md) หากต้องการรายละเอียดเพิ่มเติม (บางตัวอย่างคำสั่ง API ในคู่มือเดิมยังไม่รวมขั้นตอน login).
 
----
+| บริการสำหรับการทดลองในเครื่อง | URL |
+| --- | --- |
+| Dashboard | <http://localhost:3000> |
+| API health | <http://localhost:8000/health> |
+| Grafana | <http://localhost:3001> |
+| Prometheus | <http://localhost:9090> |
+| EMQX console | <http://localhost:18083> |
+| MinIO console | <http://localhost:9001> |
 
-## 4. Multi-Scenario Evaluation Framework
+> `docker-compose.yml` ใช้รหัสผ่านสาธิต, MQTT แบบไม่ยืนยันตัวตน และ Grafana anonymous admin. ใช้เฉพาะบนเครือข่ายที่เชื่อถือได้ ห้ามนำ configuration นี้ขึ้น production โดยตรง. เก็บ `.env` และ `keys/private.pem` ไว้นอก Git. ดู [นโยบายความปลอดภัย](SECURITY.md).
 
-The platform architecture is evaluated across 5 distinct operational scenarios to assess system behavior under varied industrial conditions:
-1. **Nominal Baseline Scenario:** Measures end-to-end delivery, verification, and installation workflows under normal operating conditions.
-2. **Security & Code Signing Verification:** Evaluates rejection capabilities against unsigned payloads, bit-flip tampered binaries, and forged cryptographic keys.
-3. **Fault Injection & Automated Rollback:** Comparative A/B evaluation between Direct and Canary Rollout strategies during firmware boot failures.
-4. **Adverse Network Conditions:** Observes telemetry delivery and binary download resilience under simulated network latency and packet loss.
-5. **Cross-Hardware Compatibility:** Verifies model enforcement mechanisms when deploying firmware across heterogeneous robot classes.
+## ตรวจสอบโค้ด
 
-Detailed experimental design and variable matrices are documented in [`docs/academic/EXPERIMENTAL_PLAN.md`](docs/academic/EXPERIMENTAL_PLAN.md).
+```powershell
+Push-Location backend; go test ./...; Pop-Location
+Push-Location simulator; go test ./...; Pop-Location
+Push-Location frontend; npm ci; npm run build; Pop-Location
+```
 
----
+CI ทดสอบ Go ทั้งสองโมดูล, build frontend และตรวจ Docker images เมื่อ push/เปิด PR ไปยัง `main`. การ deploy จาก `main` จะเรียก webhook เฉพาะเมื่อกำหนด GitHub Actions secret ชื่อ `RENDER_DEPLOY_HOOK`.
 
-## 5. Master Documentation Index
+## เอกสาร
 
-- [Master Documentation Hub](docs/README.md)
-- [Academic Project Proposal](docs/academic/PROJECT_PROPOSAL.md)
-- [Experimental Plan & Methodology](docs/academic/EXPERIMENTAL_PLAN.md)
-- [System Architecture](docs/design/ARCHITECTURE.md)
-- [API & MQTT Protocols Specification](docs/design/API_AND_MQTT_SPEC.md)
-- [Database Schema & ERD](docs/design/DATABASE_SCHEMA.md)
-- [Cryptographic Code Signing](docs/design/CRYPTO_SECURITY.md)
-- [Frontend UI/UX Specification](docs/design/UI_UX_SPEC.md)
-- [Local Setup Guide](docs/operations/SETUP_LOCAL.md)
-- [Cloud Deployment Guide](docs/operations/SETUP_CLOUD.md)
-- [Tasks & Execution Roadmap](docs/operations/TASKS_ROADMAP.md)
+- [สารบัญเอกสาร](docs/README.md), [สถาปัตยกรรม](docs/design/ARCHITECTURE.md), [API และ MQTT](docs/design/API_AND_MQTT_SPEC.md)
+- [ติดตั้งในเครื่อง](docs/operations/SETUP_LOCAL.md), [ติดตั้งบน Cloud](docs/operations/SETUP_CLOUD.md)
+- [แผนการทดลอง](docs/academic/EXPERIMENTAL_PLAN.md), [รายงาน audit เดิม](security/audit_report.md)
+
+รายงาน audit เดิมเป็น snapshot ณ 11 กันยายน 2026; ข้อค้นพบหลายรายการถูกแก้ในโค้ดหลังจากนั้นแล้ว และไม่ควรใช้แทนการตรวจ security/Dependabot alerts ปัจจุบันบน GitHub.

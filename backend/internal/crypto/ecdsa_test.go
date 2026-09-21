@@ -100,3 +100,32 @@ func TestEnsureKeypair_ProductionFailsWithoutKey(t *testing.T) {
 	}
 }
 
+func TestEnsureKeypair_ProductionAppEnvFailsWithoutKey(t *testing.T) {
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("ENV", "development")
+	t.Setenv("ECDSA_PRIVATE_KEY_B64", "")
+	t.Setenv("ECDSA_PRIVATE_KEY_PEM", "")
+	if _, _, err := EnsureKeypair(filepath.Join(t.TempDir(), "private.pem"), ""); err == nil {
+		t.Fatal("production must reject a missing signing key")
+	}
+}
+
+func TestEnsureKeypair_DevelopmentGeneratesUniqueKeys(t *testing.T) {
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("ENV", "development")
+	t.Setenv("ECDSA_PRIVATE_KEY_B64", "")
+	t.Setenv("ECDSA_PRIVATE_KEY_PEM", "")
+	dir1, dir2 := t.TempDir(), t.TempDir()
+	first, _, err := EnsureKeypair(filepath.Join(dir1, "private.pem"), filepath.Join(dir1, "public.pem"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, _, err := EnsureKeypair(filepath.Join(dir2, "private.pem"), filepath.Join(dir2, "public.pem"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.D.Cmp(second.D) == 0 {
+		t.Fatal("development instances must not share a fixed signing key")
+	}
+}
+

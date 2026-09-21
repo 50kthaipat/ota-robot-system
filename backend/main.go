@@ -133,7 +133,10 @@ func main() {
 	metrics.StartFleetMetricsSync(dbPool, 5*time.Second)
 
 	deviceHandler := handlers.NewDeviceHandler(dbPool)
-	firmwareSvc := firmware.NewService(dbPool, minioClient, bucket)
+	firmwareSvc, err := firmware.NewService(dbPool, minioClient, bucket)
+	if err != nil {
+		log.Fatalf("Unable to initialize firmware signing: %v", err)
+	}
 	firmwareHandler := handlers.NewFirmwareHandler(firmwareSvc)
 	deploymentHandler := handlers.NewDeploymentHandler(dbPool, minioClient, bucket, rolloutManager)
 	authHandler := handlers.NewAuthHandler(dbPool)

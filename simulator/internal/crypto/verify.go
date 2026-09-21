@@ -15,13 +15,6 @@ import (
 	"time"
 )
 
-// DefaultPublicKeyPEM is the embedded fallback public key used when no
-// external key file is available (e.g., during standalone testing).
-const DefaultPublicKeyPEM = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAElEKlesPvGKyGFI2RwpJsfqXxqKBA
-hkeZCoqleIU8Ix6uE5NVhG7KAtIVTcO3ylWXNO4qxiTJvhyMEA73jEgheg==
------END PUBLIC KEY-----`
-
 // VerificationResult holds the outcome and timing of an ECDSA verification.
 type VerificationResult struct {
 	Valid         bool
@@ -30,7 +23,7 @@ type VerificationResult struct {
 }
 
 // LoadPublicKey attempts to load an ECDSA P-256 public key from well-known
-// paths and falls back to the embedded default key.
+// paths and rejects firmware when no trusted public key is configured.
 func LoadPublicKey() *ecdsa.PublicKey {
 	paths := []string{
 		os.Getenv("ECDSA_PUBLIC_KEY_PATH"),
@@ -52,8 +45,8 @@ func LoadPublicKey() *ecdsa.PublicKey {
 	}
 
 	if len(data) == 0 {
-		data = []byte(DefaultPublicKeyPEM)
-		log.Printf("[crypto] Using embedded default ECDSA public key")
+		log.Printf("[crypto] No ECDSA public key found; signature verification will fail closed")
+		return nil
 	}
 
 	block, _ := pem.Decode(data)

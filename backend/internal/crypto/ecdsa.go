@@ -10,7 +10,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -55,21 +54,6 @@ func SavePublicKeyPEM(key *ecdsa.PublicKey, path string) error {
 	}
 	return os.WriteFile(path, pem.EncodeToMemory(block), 0644)
 }
-
-const (
-	// DefaultPrivateKeyPEM is the master ECDSA P-256 private key matching the fleet public key.
-	DefaultPrivateKeyPEM = `-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIH1mDDDuUx1T2mZXetVDVu4ivtfN51Ey3WflJAaMs528oAoGCCqGSM49
-AwEHoUQDQgAElEKlesPvGKyGFI2RwpJsfqXxqKBAhkeZCoqleIU8Ix6uE5NVhG7K
-AtIVTcO3ylWXNO4qxiTJvhyMEA73jEgheg==
------END EC PRIVATE KEY-----`
-
-	// DefaultPublicKeyPEM is the master ECDSA P-256 public key embedded in all robot simulators.
-	DefaultPublicKeyPEM = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAElEKlesPvGKyGFI2RwpJsfqXxqKBA
-hkeZCoqleIU8Ix6uE5NVhG7KAtIVTcO3ylWXNO4qxiTJvhyMEA73jEgheg==
------END PUBLIC KEY-----`
-)
 
 // ParsePrivateKeyFromPEM parses an EC private key from raw PEM bytes.
 func ParsePrivateKeyFromPEM(data []byte) (*ecdsa.PrivateKey, error) {
@@ -116,7 +100,7 @@ func LoadPublicKeyPEM(path string) (*ecdsa.PublicKey, error) {
 }
 
 // EnsureKeypair ensures that private and public keys are available.
-// It checks environment variables (B64/PEM), file paths, and falls back to the embedded master keypair.
+// It checks environment variables (B64/PEM) and file paths, generating a fresh pair only in development.
 func EnsureKeypair(privPath, pubPath string) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
 	// 1. Check ECDSA_PRIVATE_KEY_B64 environment variable (Base64 encoded PEM)
 	if b64 := os.Getenv("ECDSA_PRIVATE_KEY_B64"); b64 != "" {
@@ -138,33 +122,32 @@ func EnsureKeypair(privPath, pubPath string) (*ecdsa.PrivateKey, *ecdsa.PublicKe
 	if privPath != "" {
 		if priv, err := LoadPrivateKeyPEM(privPath); err == nil {
 			if pub, err := LoadPublicKeyPEM(pubPath); err == nil {
+				if pub.X.Cmp(priv.PublicKey.X) != 0 || pub.Y.Cmp(priv.PublicKey.Y) != 0 {
+					return nil, nil, errors.New("configured ECDSA public key does not match private key")
+				}
 				return priv, pub, nil
 			}
 			return priv, &priv.PublicKey, nil
 		}
 	}
 
-	// 4. Fall back to embedded master keypair (guarantees fleet compatibility in dev mode only)
-	if os.Getenv("ENV") == "production" {
-		return nil, nil, errors.New("security violation: production environment requires ECDSA_PRIVATE_KEY_B64 or valid key file, refusing to use fallback test key")
+	// Never substitute a publicly known signing key. Production must fail closed.
+	if os.Getenv("ENV") == "production" || os.Getenv("APP_ENV") == "production" {
+		return nil, nil, errors.New("production requires ECDSA_PRIVATE_KEY_B64, ECDSA_PRIVATE_KEY_PEM, or a valid private key file")
 	}
-
-	log.Println("[WARN] Using embedded fallback ECDSA private key. DO NOT USE IN PRODUCTION.")
-	priv, err := ParsePrivateKeyFromPEM([]byte(DefaultPrivateKeyPEM))
+	priv, pub, err := GenerateKeypair()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse default embedded private key: %w", err)
+		return nil, nil, fmt.Errorf("generate development keypair: %w", err)
 	}
-	pub, err := ParsePublicKeyFromPEM([]byte(DefaultPublicKeyPEM))
-	if err != nil {
-		pub = &priv.PublicKey
-	}
-
-	// Try saving to disk for local cache if path is provided
 	if privPath != "" {
-		_ = SavePrivateKeyPEM(priv, privPath)
+		if err := SavePrivateKeyPEM(priv, privPath); err != nil {
+			return nil, nil, fmt.Errorf("save development private key: %w", err)
+		}
 	}
 	if pubPath != "" {
-		_ = SavePublicKeyPEM(pub, pubPath)
+		if err := SavePublicKeyPEM(pub, pubPath); err != nil {
+			return nil, nil, fmt.Errorf("save development public key: %w", err)
+		}
 	}
 
 	return priv, pub, nil

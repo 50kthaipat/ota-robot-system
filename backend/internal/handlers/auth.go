@@ -34,6 +34,9 @@ const (
 )
 
 func authCookieSecure() bool {
+	if strings.EqualFold(os.Getenv("APP_ENV"), "production") || strings.EqualFold(os.Getenv("ENV"), "production") {
+		return true
+	}
 	return os.Getenv("COOKIE_INSECURE") != "true"
 }
 

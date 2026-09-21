@@ -20,6 +20,13 @@ func main() {
 
 	privKeyPath := filepath.Join(keysDir, "private.pem")
 	pubKeyPath := filepath.Join(keysDir, "public.pem")
+	if _, err := os.Stat(privKeyPath); err == nil {
+		fmt.Fprintln(os.Stderr, "private key already exists; refusing to overwrite an active signing identity")
+		os.Exit(1)
+	} else if !os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "cannot inspect private key: %v\n", err)
+		os.Exit(1)
+	}
 
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {

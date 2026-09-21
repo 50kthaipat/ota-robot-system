@@ -36,7 +36,7 @@ type ReleaseServiceImpl struct {
 }
 
 // NewService creates a new firmware ReleaseService.
-func NewService(pool *pgxpool.Pool, mc *minio.Client, bucket string) *ReleaseServiceImpl {
+func NewService(pool *pgxpool.Pool, mc *minio.Client, bucket string) (*ReleaseServiceImpl, error) {
 	privPath := os.Getenv("ECDSA_PRIVATE_KEY_PATH")
 	if privPath == "" {
 		privPath = "./keys/private.pem"
@@ -48,7 +48,7 @@ func NewService(pool *pgxpool.Pool, mc *minio.Client, bucket string) *ReleaseSer
 
 	priv, pub, err := mycrypto.EnsureKeypair(privPath, pubPath)
 	if err != nil {
-		log.Printf("[firmware] warning: failed to load ECDSA keypair: %v", err)
+		return nil, fmt.Errorf("initialize firmware signing keypair: %w", err)
 	}
 
 	s := &ReleaseServiceImpl{
@@ -61,7 +61,7 @@ func NewService(pool *pgxpool.Pool, mc *minio.Client, bucket string) *ReleaseSer
 	}
 
 	s.backfillSignatures(context.Background())
-	return s
+	return s, nil
 }
 
 // Release coordinates validation, signing, storage, and persistence with atomic compensation.
@@ -92,16 +92,14 @@ func (s *ReleaseServiceImpl) Release(ctx context.Context, params ReleaseParams) 
 
 	// 2. Digest & Digital Signature
 	checksum := fmt.Sprintf("%x", sha256.Sum256(params.Data))
-	var sigStr string
-	if s.privKey != nil {
-		sig, signErr := mycrypto.SignSHA256(s.privKey, checksum)
-		if signErr != nil {
-			log.Printf("[firmware] warning: failed to sign firmware: %v", signErr)
-		} else {
-			sigStr = sig
-			log.Printf("[firmware] signed firmware v%s with ECDSA P-256", version)
-		}
+	if s.privKey == nil {
+		return nil, errors.New("firmware signing key unavailable")
 	}
+	sigStr, err := mycrypto.SignSHA256(s.privKey, checksum)
+	if err != nil {
+		return nil, fmt.Errorf("sign firmware: %w", err)
+	}
+	log.Printf("[firmware] signed firmware v%s with ECDSA P-256", version)
 
 	// 3. Storage Upload
 	storageKey := fmt.Sprintf("firmware/%s/%s", version, filename)
